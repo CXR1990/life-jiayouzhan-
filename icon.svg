@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FBE9D4"/>
+      <stop offset="1" stop-color="#F6D9B8"/>
+    </linearGradient>
+  </defs>
+  <!-- 圆角底 -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- 耳朵 -->
+  <path d="M120 160 L150 72 L214 118 Z" fill="#F2A65A" stroke="#E58A3C" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M392 160 L362 72 L298 118 Z" fill="#F2A65A" stroke="#E58A3C" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M148 132 L162 100 L190 124 Z" fill="#F9CFA0"/>
+  <path d="M364 132 L350 100 L322 124 Z" fill="#F9CFA0"/>
+  <!-- 头 -->
+  <circle cx="256" cy="240" r="150" fill="#F5B26B" stroke="#E58A3C" stroke-width="12"/>
+  <!-- 虎斑条纹 -->
+  <path d="M256 96 v18 M256 120 v22 M256 150 v20" stroke="#E58A3C" stroke-width="10" stroke-linecap="round"/>
+  <path d="M188 132 l16 18 M324 132 l-16 18" stroke="#E58A3C" stroke-width="9" stroke-linecap="round"/>
+  <!-- 白色胸口 -->
+  <ellipse cx="256" cy="322" rx="62" ry="52" fill="#FFF6EA"/>
+  <!-- 眼睛 -->
+  <ellipse cx="198" cy="232" rx="24" ry="28" fill="#4A3524"/>
+  <ellipse cx="314" cy="232" rx="24" ry="28" fill="#4A3524"/>
+  <circle cx="208" cy="222" r="9" fill="#FFFFFF"/>
+  <circle cx="324" cy="222" r="9" fill="#FFFFFF"/>
+  <!-- 鼻子 -->
+  <path d="M256 268 q-12 14 0 24 q12 -10 0 -24z" fill="#E8968A"/>
+  <!-- 嘴 -->
+  <path d="M256 292 q-14 16 -28 12 M256 292 q14 16 28 12" stroke="#8A5A3B" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <!-- 腮红 -->
+  <ellipse cx="162" cy="284" rx="26" ry="17" fill="#F7C9B8" opacity="0.85"/>
+  <ellipse cx="350" cy="284" rx="26" ry="17" fill="#F7C9B8" opacity="0.85"/>
+  <!-- 胡须 -->
+  <path d="M128 252 l-34 6 M128 272 l-34 14 M384 252 l34 6 M384 272 l34 14" stroke="#8A5A3B" stroke-width="6" stroke-linecap="round" opacity="0.7"/>
+</svg>
