@@ -1,41 +1,57 @@
-const CACHE = 'life-station-v2';
-const ASSETS = ['./', './index.html', './icon.svg', './manifest.webmanifest'];
+/* ============================================================
+ * sw.js —— 自清理版本（不再缓存任何资源，不再拦截任何请求）
+ *
+ * 背景：旧版 sw.js 会把 index.html 等资源写入 Cache Storage 并
+ *       拦截 fetch，导致已「添加到桌面」的旧 Service Worker 一直
+ *       返回旧页面 / 旧清单，表现为开屏图卡住、更新不生效。
+ *
+ * 本版本激活后立即执行：
+ *   1) 清空 Cache Storage 中的全部缓存
+ *   2) 注销自身（Service Worker 被移除）
+ *   3) 刷新所有已打开的页面，让它们直接走网络加载最新版
+ * 并且**不注册 fetch 监听**，因此不再参与任何网络请求。
+ * ============================================================ */
 
-self.addEventListener('install', function(e){
-  e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
+self.addEventListener('install', function(){
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', function(e){
-  e.waitUntil(caches.keys().then(function(keys){
-    return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
-  }).then(function(){ return self.clients.claim(); }));
-});
-
-self.addEventListener('fetch', function(e){
-  if(e.request.method !== 'GET') return;
-  var url = new URL(e.request.url);
-  // 对页面(HTML)永远「网络优先」：保证每次部署后用户都能立刻看到最新版
-  var isPage = e.request.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/');
-  if(isPage){
-    e.respondWith(
-      fetch(e.request).then(function(res){
-        var copy = res.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
-        return res;
-      }).catch(function(){
-        return caches.match(e.request).then(function(h){ return h || caches.match('./index.html'); });
-      })
-    );
-    return;
-  }
-  // 其他静态资源(图标/清单)缓存优先，提速
-  e.respondWith(
-    caches.match(e.request).then(function(hit){
-      return hit || fetch(e.request).then(function(res){
-        var copy = res.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
-        return res;
-      }).catch(function(){ return caches.match('./index.html'); });
-    })
+self.addEventListener('activate', function(event){
+  event.waitUntil(
+    selfClean()
+      .then(reloadOpenPages)
+      .catch(function(){ /* 清理失败也不影响页面正常使用 */ })
   );
 });
+
+/* 清空全部缓存 */
+function clearAllCaches(){
+  if(!self.caches || !self.caches.keys) return Promise.resolve();
+  return self.caches.keys().then(function(keys){
+    return Promise.all(keys.map(function(key){
+      return self.caches.delete(key);
+    }));
+  }).catch(function(){ return null; });
+}
+
+/* 注销自身 */
+function unregisterSelf(){
+  if(!self.registration || !self.registration.unregister) return Promise.resolve();
+  return self.registration.unregister().catch(function(){ return null; });
+}
+
+function selfClean(){
+  return Promise.all([ clearAllCaches(), unregisterSelf() ]);
+}
+
+/* 通知所有已打开的页面重新加载（此时 SW 已注销，会直接走网络） */
+function reloadOpenPages(){
+  if(!self.clients || !self.clients.matchAll) return Promise.resolve();
+  return self.clients.matchAll({ type: 'window' }).then(function(list){
+    list.forEach(function(client){
+      try{ client.navigate(client.url); }catch(e){}
+    });
+  }).catch(function(){ return null; });
+}
+
+/* 注意：刻意不注册 'fetch' 事件，本 Service Worker 不拦截任何请求 */

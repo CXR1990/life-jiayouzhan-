@@ -4,7 +4,60 @@
 <meta charset="UTF-8" data-page-node-id="5cuhwFsmvK7znv4w8J6peq">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="d7QSWLt8TObsBROR3IRqoW">
 <title>生活加油站</title>
-<link rel="manifest" href="manifest.webmanifest">
+<!-- manifest：自动识别文件名大小写（先试小写，失败再试大写），避免大小写敏感服务器取不到清单、导致添加到桌面后卡开屏 -->
+<script>
+(function(){
+  var CANDS = ['manifest.webmanifest', 'MANIFEST.webmanifest', 'manifest.json', 'MANIFEST.json'];
+  var i = 0;
+  function attach(url){
+    var old = document.querySelector('link[rel="manifest"]');
+    if(old && old.parentNode) old.parentNode.removeChild(old);
+    var l = document.createElement('link');
+    l.rel = 'manifest'; l.href = url;
+    document.head.appendChild(l);
+  }
+  function probe(){
+    /* 全部候选都取不到时退回默认小写，保持原有行为，不影响页面本身 */
+    if(i >= CANDS.length){ attach('manifest.webmanifest'); return; }
+    var url = CANDS[i++];
+    fetch(url, {method:'GET', cache:'no-store'}).then(function(r){
+      if(!r.ok) throw new Error('bad status');
+      return r.text();
+    }).then(function(t){
+      try{ JSON.parse(t); }catch(e){ throw new Error('not json'); }
+      attach(url); /* 确认是合法 JSON 清单才挂载 */
+    }).catch(probe);
+  }
+  probe();
+})();
+</script>
+<!-- 清理历史 Service Worker / 缓存 + 申请持久化存储 -->
+<script>
+(function(){
+  /* 1) 注销所有已注册的 Service Worker：旧 SW 会缓存旧页面，导致开屏图卡住、更新不生效 */
+  try{
+    if('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations){
+      navigator.serviceWorker.getRegistrations().then(function(regs){
+        regs.forEach(function(reg){ try{ reg.unregister(); }catch(e){} });
+      }).catch(function(){});
+    }
+  }catch(e){}
+  /* 2) 清空 Cache Storage 中的全部缓存 */
+  try{
+    if(window.caches && window.caches.keys){
+      window.caches.keys().then(function(keys){
+        keys.forEach(function(k){ try{ window.caches.delete(k); }catch(e){} });
+      }).catch(function(){});
+    }
+  }catch(e){}
+  /* 3) 申请持久化存储，避免系统回收本地数据（照片 / 笔记 / 打卡记录） */
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      navigator.storage.persist().catch(function(){});
+    }
+  }catch(e){}
+})();
+</script>
 <link rel="icon" type="image/jpeg" href="icon.jpg">
 <link rel="apple-touch-icon" href="icon.jpg">
 <link rel="apple-touch-icon" sizes="180x180" href="icon.jpg">
@@ -431,6 +484,140 @@
   .card[data-sec="sleep"].card-open .schart .schart-body{ display:flex; }
   .card[data-sec="sleep"].card-open .schart svg{ width:100%; height:100%; display:block; }
 
+  /* ===== 备忘录（对标华为原生备忘录） ===== */
+  .card[data-sec="memo"]{ background:#EAF2FB; border-color:#CFE0F2; }
+  /* hidden 属性在本板块需优先于 display 规则，否则空态与编辑区会同时显示 */
+  .card[data-sec="memo"] [hidden]{ display:none !important; }
+  .card[data-sec="memo"] .hint{ font-size:12px; color:var(--sub); margin-left:8px; }
+  .card[data-sec="memo"] .memo-searchwrap{ position:relative; margin:4px 0 14px; }
+  .card[data-sec="memo"] .memo-searchico{ position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:13px; opacity:.55; pointer-events:none; }
+  .card[data-sec="memo"] .memo-search{ width:100%; box-sizing:border-box; padding:10px 14px 10px 36px; border:1px solid #DCE8F5; border-radius:14px; background:#fff; font-size:14px; color:var(--ink); outline:none; }
+  .card[data-sec="memo"] .memo-search:focus{ border-color:var(--blue); box-shadow:0 0 0 3px rgba(127,166,232,.18); }
+  .card[data-sec="memo"] .memo-wrap{ display:flex; gap:16px; align-items:stretch; min-height:560px; }
+  .card[data-sec="memo"] .memo-list-pane{ position:relative; width:320px; flex:none; display:flex; flex-direction:column; background:#fff; border-radius:16px; box-shadow:0 4px 16px rgba(127,166,232,.12); overflow:hidden; }
+  .card[data-sec="memo"] .memo-folders{ display:flex; gap:8px; flex-wrap:wrap; padding:12px 12px 8px; border-bottom:1px solid #F0F4F8; }
+  .card[data-sec="memo"] .memo-chip{ border:1px solid transparent; border-left:3px solid var(--fc,#DCE3EC); background:#F1F5FB; color:#5B6B82; font-size:12px; padding:6px 12px; border-radius:20px; cursor:pointer; transition:.15s; }
+  .card[data-sec="memo"] .memo-chip.active{ background:var(--blue); color:#fff; border-left-color:var(--blue); }
+  .card[data-sec="memo"] .memo-chip-new{ background:#EAF6EE; color:#5C9C74; border-left-color:#CFEAD7; }
+  .card[data-sec="memo"] .memo-chip-trash{ background:#FBEDEA; color:#C77; border-left-color:#F3D2CB; }
+  .card[data-sec="memo"] .memo-list{ flex:1 1 auto; min-height:0; overflow-y:auto; padding:10px; }
+  .card[data-sec="memo"] .memo-empty-list{ color:var(--sub); font-size:13px; text-align:center; padding:40px 10px; }
+  .card[data-sec="memo"] .memo-item{ position:relative; margin-bottom:8px; border-radius:12px; overflow:hidden; }
+  .card[data-sec="memo"] .memo-item-main{ position:relative; z-index:2; background:#fff; border:1px solid #EEF2F7; border-radius:12px; padding:11px 12px; cursor:pointer; transition:transform .18s ease; }
+  .card[data-sec="memo"] .memo-item.swiped .memo-item-main{ transform:translateX(-132px); }
+  .card[data-sec="memo"] .memo-item.active .memo-item-main{ border-color:var(--blue); background:#F5F9FF; }
+  .card[data-sec="memo"] .memo-item-top{ display:flex; align-items:center; gap:6px; }
+  .card[data-sec="memo"] .memo-star-ico{ color:#F0B340; font-size:13px; }
+  .card[data-sec="memo"] .memo-item-title{ font-weight:600; font-size:14px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card[data-sec="memo"] .memo-item-ex{ font-size:12px; color:var(--sub); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card[data-sec="memo"] .memo-item-time{ font-size:11px; color:#B7C0CC; margin-top:5px; }
+  .card[data-sec="memo"] .memo-kebab{ position:absolute; right:8px; top:8px; border:none; background:transparent; color:#B7C0CC; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; }
+  .card[data-sec="memo"] .memo-item-actions{ position:absolute; right:0; top:0; height:100%; display:flex; z-index:1; }
+  .card[data-sec="memo"] .memo-act{ border:none; color:#fff; font-size:12px; padding:0 12px; cursor:pointer; }
+  .card[data-sec="memo"] .memo-pin{ background:#7FA6E8; }
+  .card[data-sec="memo"] .memo-star{ background:#F0B340; }
+  .card[data-sec="memo"] .memo-del{ background:#E0786E; }
+  .card[data-sec="memo"] .memo-restore{ background:#8FBF9F; }
+  .card[data-sec="memo"] .memo-delperm{ background:#B79B8A; }
+  .card[data-sec="memo"] .memo-add{ position:absolute; right:16px; bottom:16px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#9DBDF0,#7FA6E8); color:#fff; font-size:28px; line-height:1; cursor:pointer; box-shadow:0 6px 16px rgba(127,166,232,.45); transition:.15s; z-index:3; }
+  .card[data-sec="memo"] .memo-add:active{ transform:scale(.92); }
+  .card[data-sec="memo"] .memo-edit-pane{ flex:1 1 auto; min-width:0; display:flex; background:#fff; border-radius:16px; box-shadow:0 4px 16px rgba(127,166,232,.12); overflow:hidden; }
+  .card[data-sec="memo"] .memo-edit-empty, .card[data-sec="memo"] .memo-edit-body{ flex:1 1 auto; padding:20px 22px; display:flex; flex-direction:column; }
+  .card[data-sec="memo"] .memo-edit-empty{ align-items:center; justify-content:center; color:var(--sub); text-align:center; gap:10px; }
+  .card[data-sec="memo"] .memo-empty-emoji{ font-size:46px; }
+  .card[data-sec="memo"] .memo-back{ display:none; align-self:flex-start; border:none; background:#F1F5FB; color:#5B6B82; border-radius:10px; padding:6px 12px; cursor:pointer; font-size:13px; margin-bottom:10px; }
+  /* 右上角操作栏（撤销/重做/保存）为手机竖版专属，桌面端不显示 */
+  .card[data-sec="memo"] .memo-actions{ display:none; }
+  .card[data-sec="memo"] .memo-title{ border:none; outline:none; font-size:20px; font-weight:700; color:var(--ink); margin-bottom:8px; background:transparent; }
+  .card[data-sec="memo"] .memo-title::placeholder{ color:#C2CAD6; }
+  .card[data-sec="memo"] .memo-metarow{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .card[data-sec="memo"] .memo-folder-sel{ border:1px solid #E2EAF3; border-radius:10px; padding:5px 8px; font-size:12px; color:#5B6B82; background:#F8FBFE; outline:none; }
+  .card[data-sec="memo"] .memo-saved{ font-size:11px; color:#8FBF9F; opacity:0; transition:.2s; }
+  .card[data-sec="memo"] .memo-saved.show{ opacity:1; }
+  .card[data-sec="memo"] .memo-tools{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:10px; border-bottom:1px dashed #EDEFF3; }
+  .card[data-sec="memo"] .memo-tool{ border:1px solid #E2EAF3; background:#F8FBFE; color:#5B6B82; border-radius:10px; padding:7px 11px; font-size:12px; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:4px; }
+  .card[data-sec="memo"] .memo-tool:hover{ border-color:var(--blue); color:var(--blue); }
+  .card[data-sec="memo"] .memo-tool-color{ position:relative; overflow:hidden; }
+  .card[data-sec="memo"] .memo-tool-color input[type=color]{ position:absolute; inset:0; opacity:0; cursor:pointer; border:none; padding:0; }
+  .card[data-sec="memo"] .memo-editor{ flex:1 1 auto; min-height:220px; outline:none; font-size:15px; line-height:1.8; color:var(--ink); overflow-y:auto; }
+  .card[data-sec="memo"] .memo-editor[data-placeholder]:empty:before{ content:attr(data-placeholder); color:#C2CAD6; }
+  .card[data-sec="memo"] .memo-img{ max-width:100%; border-radius:10px; margin:6px 0; display:block; }
+  .card[data-sec="memo"] .memo-check{ display:flex; align-items:flex-start; gap:8px; margin:4px 0; }
+  .card[data-sec="memo"] .memocbx{ flex:none; cursor:pointer; font-size:15px; user-select:none; color:var(--blue); line-height:1.6; }
+  .card[data-sec="memo"] .memotxt{ flex:1 1 auto; outline:none; min-height:1.4em; }
+  .card[data-sec="memo"] .memo-check[data-done="1"] .memotxt{ text-decoration:line-through; color:var(--sub); }
+  .card[data-sec="memo"] .memo-toast{ position:fixed; left:50%; bottom:80px; transform:translate(-50%,20px); background:rgba(61,58,52,.9); color:#fff; font-size:13px; padding:9px 16px; border-radius:20px; z-index:999; opacity:0; transition:.3s; pointer-events:none; }
+  .card[data-sec="memo"] .memo-toast.show{ opacity:1; transform:translate(-50%,0); }
+  @media (max-width:760px){
+    .card[data-sec="memo"].card-open{ display:flex; flex-direction:column; }
+    .card[data-sec="memo"].card-open .sec-head{ margin-bottom:10px; }
+    .card[data-sec="memo"].card-open .memo-wrap{ flex:1 1 auto; min-height:0; flex-direction:column; }
+    .card[data-sec="memo"].card-open .memo-list-pane{ width:auto; flex:1 1 auto; min-height:0; }
+    .card[data-sec="memo"].card-open .memo-edit-pane{ flex:1 1 auto; min-height:0; }
+    .card[data-sec="memo"].card-open:not(.memo-editing) .memo-edit-pane{ display:none; }
+    .card[data-sec="memo"].card-open.memo-editing .memo-list-pane{ display:none; }
+    .card[data-sec="memo"] .memo-back{ display:inline-flex; }
+  }
+  /* ===== 备忘录 · 手机竖版界面优化（仅 ≤760px 生效，桌面端不受影响） ===== */
+  @media (max-width:760px){
+    /* 顶部：备忘录标题 + 小字副标题（副标题换到下一行） */
+    .card[data-sec="memo"] .sec-head{ flex-wrap:wrap; }
+    .card[data-sec="memo"] .sec-head .hint{ width:100%; margin-left:34px; margin-top:2px; font-size:11px; line-height:1.4; }
+    /* 列表页：新建加号移到左下角 */
+    .card[data-sec="memo"] .memo-add{ right:auto; left:18px; bottom:20px; width:56px; height:56px; font-size:30px; }
+    /* 列表卡片微调：更圆润柔和 */
+    .card[data-sec="memo"] .memo-item-main{ border-radius:14px; padding:12px 13px; }
+    /* 编辑页：右上角「列表」返回 */
+    .card[data-sec="memo"] .memo-topbar{ display:flex; align-items:center; justify-content:space-between; gap:8px; height:40px; margin:0; padding:0 12px 0 4px; overflow:hidden; }
+    .card[data-sec="memo"] .memo-back{ display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; margin:0; padding:0; border-radius:50%; background:transparent; color:var(--ink); font-size:20px; line-height:1; }
+    /* 大号加粗标题 */
+    .card[data-sec="memo"] .memo-title{ height:48px; box-sizing:border-box; padding:4px 0; margin:4px 0 0; font-size:22px; font-weight:800; line-height:1.2; letter-spacing:.2px; display:block; width:100%; border:none; background:transparent; }
+    /* 标题下方轻量一行：创建时间 + 分类下拉，高度锁死 28px，底部间距 6px */
+    .card[data-sec="memo"] .memo-metarow{ display:flex; align-items:center; gap:9px; flex-wrap:nowrap; height:28px; margin:0 0 6px; padding:0; overflow:hidden; }
+    .card[data-sec="memo"] .memo-created{ font-size:11.5px; color:#A8B2BE; white-space:nowrap; }
+    .card[data-sec="memo"] .memo-folder-sel{ font-size:12px; padding:5px 10px; border-radius:12px; max-width:46%; }
+    .card[data-sec="memo"] .memo-saved{ font-size:11px; margin-left:auto; }
+    /* 大片空白正文输入区（撑满剩余高度） */
+    .card[data-sec="memo"].card-open.memo-editing .memo-edit-pane{ display:flex; flex-direction:column; }
+    .card[data-sec="memo"].card-open.memo-editing .memo-edit-body{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; padding:0 12px; margin:0; gap:0; overflow:hidden; }
+    .card[data-sec="memo"] .memo-editor{ flex:1 1 auto; min-height:0; overflow-y:auto; }
+    /* 底部工具栏：7 个图标等分一行，图标在上文字在下 */
+    .card[data-sec="memo"] .memo-tools{ display:flex; gap:10px; flex-wrap:nowrap; justify-content:space-around; align-items:center; margin:0; height:56px; box-sizing:border-box; padding:4px 8px; border-top:1px solid #EFF3F8; background:#FFFDF9; flex:0 0 auto; overflow:hidden; }
+    .card[data-sec="memo"] .memo-tools .memo-tool{ flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; height:100%; border:none; background:transparent; padding:0; color:#5B6B82; border-radius:12px; }
+    .card[data-sec="memo"] .memo-tools .mt-ico{ font-size:22px; line-height:1; }
+    .card[data-sec="memo"] .memo-tools .memo-tool:active{ background:#F1F5FB; }
+    /* 文字排版面板（点「文字排版」展开：加粗 / 颜色 / 语音 横向） */
+    .card[data-sec="memo"] .memo-stylepanel{ display:flex; gap:8px; flex-wrap:nowrap; align-items:center; padding:9px 2px; border-top:1px solid #EFF3F8; background:#F7FAFF; }
+    .card[data-sec="memo"] .memo-stylepanel .memo-tool{ border:1px solid #E2EAF3; background:#fff; border-radius:11px; padding:7px 13px; font-size:12.5px; color:#5B6B82; flex:0 0 auto; }
+    /* 空态：铅笔配图 + 提示 */
+    .card[data-sec="memo"] .memo-pencil{ width:96px; height:96px; border-radius:28px; background:#F1F6FD; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+    .card[data-sec="memo"] .memo-pencil span{ font-size:44px; }
+    /* 编辑模式：隐藏板块大标题与副标题，顶部只留操作栏+标题区（对照截图） */
+    .card[data-sec="memo"].card-open.memo-editing .sec-head{ display:none; }
+    /* 空态卡片轻量化 */
+    .card[data-sec="memo"] .memo-edit-empty{ padding:12px; margin-top:8px; }
+    .card[data-sec="memo"] .memo-pencil{ width:56px; height:56px; border-radius:18px; background:#F1F6FD; display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+    .card[data-sec="memo"] .memo-pencil span{ font-size:28px; }
+    .card[data-sec="memo"] .memo-edit-empty p{ font-size:12.5px; color:var(--sub); line-height:1.6; }
+    /* 文字排版面板：纯图标按钮 */
+    .card[data-sec="memo"] .sp-ico{ font-size:16px; line-height:1; display:inline-flex; align-items:center; }
+    .card[data-sec="memo"] .sp-bold{ font-weight:800; font-size:15px; }
+    /* ── 编辑模式隐藏搜索栏，退出编辑自动恢复 ── */
+    .card[data-sec="memo"].card-open.memo-editing .memo-searchwrap{ display:none; }
+    .card[data-sec="memo"] .memo-searchwrap{ margin:0 0 10px; }
+    /* ── 键盘弹出时：卡片高度锁定为「视觉视口高度」，卡片整体不滚动，杜绝内容被整体上顶 ── */
+    .card[data-sec="memo"].card-open.memo-editing{ height:var(--vvh,100dvh); min-height:var(--vvh,100dvh); flex:0 0 auto; overflow:hidden; }
+    .card[data-sec="memo"].card-open.memo-editing .memo-wrap{ flex:1 1 auto; min-height:0; }
+    .card[data-sec="memo"].card-open.memo-editing .memo-edit-pane{ display:flex; flex-direction:column; flex:1 1 auto; min-height:0; overflow:hidden; }
+    /* ── 正文是唯一滚动容器：键盘只压缩它，标题栏与底部工具栏全程不动 ── */
+    .card[data-sec="memo"] .memo-editor{ flex:1 1 auto; min-height:min(200px, calc(var(--vvh,100dvh) - 230px)); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; margin:0; padding:0; }
+    /* ── 右上角操作栏：撤销 / 重做 / 保存 ── */
+    .card[data-sec="memo"] .memo-actions{ display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+    .card[data-sec="memo"] .memo-actbtn{ width:32px; height:32px; border-radius:50%; border:none; background:transparent; color:var(--ink); font-size:20px; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+    .card[data-sec="memo"] .memo-actbtn:active{ background:#EEF3FA; }
+    .card[data-sec="memo"] .memo-savebtn{ color:#4E8C66; font-weight:700; }
+  }
+
   /* ===== 历史回顾子页面 ===== */
   #histPage{
     position:fixed; inset:0; background:var(--bg); z-index:91; display:none;
@@ -581,6 +768,7 @@
 .card[data-sec="fitness"]{ background:#E9F8EF; border-color:#CDEBD8; }
 .card[data-sec="health"]{ background:#F3F9E8; border-color:#E0EDC6; }
 .card[data-sec="skin"]{ background:#FDEEF3; border-color:#F6D6E1; }
+.card[data-sec="habit"]{ background:#F1F8F5; border-color:#DDEDE7; }
 .card[data-sec="finance"]{ background:#FBF4E6; border-color:#EEDFC4; }
 .card[data-sec="sleep"]{ background:#F1EEFB; border-color:#DFD9F2; }
 .card[data-sec="joys"]{ background:#FFF3E9; border-color:#F6DCC6; }
@@ -969,10 +1157,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="navitem" data-nav="fitness"><span class="nico">💪</span>运动健身</div>
       <div class="navitem" data-nav="health"><span class="nico">☯</span>每日养生</div>
           <div class="navitem" data-nav="skin"><span class="nico">🧴</span>肌肤护理</div>
+      <div class="navitem" data-nav="habit"><span class="nico">🌈</span>习惯养成</div>
       <div class="navitem" data-nav="finance"><span class="nico">💰</span>财务记录</div>
       <div class="navitem" data-nav="sleep"><span class="nico">😴</span>睡眠记录</div>
       <div class="navitem" data-nav="joys"><span class="nico">✨</span>星点日常</div>
       <div class="navitem" data-nav="notes"><span class="nico">💡</span>灵感随记</div>
+      <div class="navitem" data-nav="memo"><span class="nico">📒</span>备忘录</div>
   <div class="navitem" data-nav="period"><span class="nico">🌸</span>经期管理</div>
   <div class="navitem" data-nav="growth"><span class="nico">🌱</span>美美进化</div>
 
@@ -1163,6 +1353,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     <div class="grid skin" id="skinGrid" data-page-node-id="0vFzPcguU4nBlz3bNGm9HI"></div>
   </div>
 
+  <!-- 5c 习惯养成 -->
+  <div class="card" data-sec="habit">
+    <div class="sec-head">
+      <div class="sec-ico" style="background:#DFF0EA;">🌈</div>
+      <h2>习惯养成</h2>
+    </div>
+    <div class="grid" id="habitGrid"></div>
+  </div>
+
   <!-- 6 财务记录 -->
   <div class="card" data-sec="finance" data-page-node-id="CsE6OIFW0ypOz9j5gkJwZ5">
     <div class="sec-head" data-page-node-id="jRkTNkGsLBK8IvFLIybShW">
@@ -1219,6 +1418,63 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <button class="btn small" id="noteAdd" data-page-node-id="Q0H1JBtxNQc2EcdA0eiTfs">种下念头🌱</button>
     </div>
     <div id="noteList" data-page-node-id="Y0AhPwDIUv8ojSFGDKTfNM"></div>
+  </div>
+
+  <!-- 备忘录（对标华为原生备忘录，本地存储） -->
+  <div class="card" data-sec="memo">
+    <div class="sec-head">
+      <div class="sec-ico" style="background:var(--blue-soft);">📒</div>
+      <h2>备忘录</h2>
+      <span class="hint">本地保存 · 自动归档你的小念头</span>
+    </div>
+
+    <div class="memo-searchwrap">
+      <span class="memo-searchico">🔍</span>
+      <input type="text" id="memoSearch" class="memo-search" placeholder="搜索笔记标题与内容…">
+    </div>
+
+    <div class="memo-wrap">
+      <!-- 左侧：文件夹 + 笔记列表 + 新建 -->
+      <div class="memo-list-pane">
+        <div class="memo-folders" id="memoFolders"></div>
+        <div class="memo-list" id="memoList"></div>
+        <button class="memo-add" id="memoAdd" type="button" title="新建笔记" aria-label="新建笔记">＋</button>
+      </div>
+      <!-- 右侧：编辑区 -->
+      <div class="memo-edit-pane" id="memoEditPane">
+        <div class="memo-edit-empty" id="memoEmpty">
+          <div class="memo-pencil"><span>✏️</span></div>
+          <p>选择一条笔记查看，或点左下角 ＋ 新建</p>
+        </div>
+        <div class="memo-edit-body" id="memoEditBody" hidden>
+          <div class="memo-topbar">
+            <button class="memo-back" id="memoBack" type="button" title="返回列表" aria-label="返回列表">←</button>
+            <div class="memo-actions">
+              <button class="memo-actbtn" id="memoUndo" type="button" title="撤销" aria-label="撤销">↶</button>
+              <button class="memo-actbtn" id="memoRedo" type="button" title="重做" aria-label="重做">↷</button>
+              <button class="memo-actbtn memo-savebtn" id="memoSaveBtn" type="button" title="保存" aria-label="保存">✓</button>
+            </div>
+          </div>
+          <input type="text" id="memoTitle" class="memo-title" placeholder="标题">
+          <div class="memo-metarow">
+            <span class="memo-created" id="memoCreated"></span>
+            <select id="memoFolderSel" class="memo-folder-sel"><option value="all">未分类</option></select>
+          </div>
+          <div class="memo-editor" id="memoBody" contenteditable="true" data-placeholder="写点什么吧～"></div>
+          <div class="memo-stylepanel" id="memoStylePanel" hidden>
+            <button class="memo-tool" id="memoBold" type="button" title="加粗" aria-label="加粗"><span class="sp-ico sp-bold">B</span></button>
+            <label class="memo-tool memo-tool-color" title="文字颜色" aria-label="文字颜色"><span class="sp-ico">🎨</span><input type="color" id="memoColor" value="#7FA6E8"></label>
+          </div>
+          <div class="memo-tools" id="memoTools">
+            <button class="memo-tool" data-tool="check" type="button" title="清单勾选" aria-label="清单勾选"><span class="mt-ico">☑</span></button>
+            <button class="memo-tool" data-tool="type" type="button" title="文字排版" aria-label="文字排版"><span class="mt-ico">🅰</span></button>
+            <button class="memo-tool" data-tool="pic" type="button" title="插入图片" aria-label="插入图片"><span class="mt-ico">🖼</span></button>
+            <button class="memo-tool" data-tool="voice" type="button" title="录音转写" aria-label="录音转写"><span class="mt-ico">🎤</span></button>
+          </div>
+          <input type="file" id="memoFile" accept="image/*" hidden>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 月度数据统计 -->
@@ -1445,7 +1701,7 @@ function getDay(d){
       todos:{work:[],life:[],study:[]},
       english:{readDone:false,readMin:'',readFeel:''},
       fitness:{parts:{},videos:{},feel:{}},
-      health:{}, skin:{},
+      health:{}, skin:{}, habit:{},
       finance:{expense:'',income:''},
       sleep:{hours:'',score:''},
       joys:[{text:'',photo:null},{text:'',photo:null},{text:'',photo:null}]
@@ -1459,7 +1715,7 @@ function getDay(d){
   day.fitness.parts = day.fitness.parts || {};
   day.fitness.videos = day.fitness.videos || {};
   day.fitness.feel = day.fitness.feel || {};
-  day.health = day.health || {}; day.skin = day.skin || {};
+  day.health = day.health || {}; day.skin = day.skin || {}; day.habit = day.habit || {};
   day.finance = day.finance || {expense:'',income:''};
   day.sleep = day.sleep || {hours:'',score:''};
   day.joys = (day.joys && day.joys.length===3) ? day.joys.map(function(j){ return (j && typeof j==='object') ? {text:j.text||'', photo:j.photo||null} : {text:String(j||''), photo:null}; }) : [{text:'',photo:null},{text:'',photo:null},{text:'',photo:null}];
@@ -1479,7 +1735,7 @@ function save(){
 function load(){
   try{
     var raw = localStorage.getItem(STORE_KEY);
-    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; } }
+    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; } }
   }catch(e){}
 }
 
@@ -2039,11 +2295,16 @@ var HEALTH = [
   {k:'晨起温水', e:'🥛'}, {k:'梳头百下', e:'💁'}, {k:'揉耳朵', e:'👂'},
   {k:'凯格尔运动', e:'🏃'}, {k:'核桃甩背', e:'🌰'}, {k:'吃西红柿', e:'🍅'},
   {k:'揉腹', e:'🤲'}, {k:'敲肝胆经', e:'👊'}, {k:'古法养生操', e:'🧘'}, {k:'十一点前睡', e:'🌙'}, {k:'泡脚脚', e:'🦶'},
-  {k:'泡沫轴滚背', e:'🛞'}, {k:'绕舌30下', e:'👅'}, {k:'靠墙静蹲', e:'🧍'}, {k:'黑芝麻蒸蛋', e:'🥚'}, {k:'吃营养品', e:'💊'}
+  {k:'泡沫轴滚背', e:'🛞'}, {k:'绕舌30下', e:'👅'}, {k:'靠墙静蹲', e:'🧍'},   {k:'黑芝麻蒸蛋', e:'🥚'}, {k:'吃营养品', e:'💊'}, {k:'倒立两分钟', e:'🙃'}
 ];
 var SKIN = [
   {k:'物理防晒', e:'⛱️'}, {k:'涂防晒', e:'🧴'}, {k:'敷面膜', e:'🪞'}, {k:'晚涂A醇', e:'🌙'},
   {k:'涂护手霜', e:'🧤'}, {k:'涂护脚霜', e:'🦶'}
+];
+/* 习惯养成：与每日养生/肌肤护理同构，由 renderCheckGrid 渲染，勾选自动触发金币 +1 */
+var HABIT = [
+  {k:'大笑10次', e:'😆'}, {k:'对镜微笑', e:'😊'}, {k:'20分钟朗读', e:'📖'},
+  {k:'睡前青蛙趴', e:'🐸'}, {k:'超慢跑30分钟', e:'🏃'}, {k:'敲太溪穴200下', e:'👣'}
 ];
 function renderCheckGrid(boxId, list, field){
   var day = getDay(curDate);
@@ -3450,9 +3711,10 @@ function renderAll(){
   });
 
   safeRender(function(){ renderTodos(); renderParts(); });
-  safeRender(function(){ renderCheckGrid('healthGrid', HEALTH, 'health'); renderCheckGrid('skinGrid', SKIN, 'skin'); });
+  safeRender(function(){ renderCheckGrid('healthGrid', HEALTH, 'health'); renderCheckGrid('skinGrid', SKIN, 'skin'); renderCheckGrid('habitGrid', HABIT, 'habit'); });
   safeRender(function(){ renderFinStats(); renderFinCharts(); renderNotes(); renderPocket(); });
   safeRender(function(){ renderEngStats(); renderStats(); renderSleepCharts(); renderJar(); renderTrack(); renderPeriod(); renderGrowth(); });
+  safeRender(renderMemos);
 }
 /* 板块渲染容错包装：任何单个板块渲染异常都不影响其他板块，控制台给出提示便于排查 */
 function safeRender(fn){
@@ -4016,10 +4278,247 @@ function renderGrowth(){
 }
 
 
+/* ================= 备忘录（对标华为原生备忘录，本地存储） ================= */
+var memoCurrent=null, memoFilter='all', memoSearch='', memoEditorLoaded=null, memoSavedT=null, memoLastEdit='body';
+function memoGenId(){ return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function memoNow(){ return new Date().toISOString(); }
+function memoInitData(){
+  if(!state.memos) state.memos=[];
+  if(!state.memoFolders) state.memoFolders=[];
+}
+function memoFind(id){ return state.memos.filter(function(n){ return n.id===id; })[0]; }
+function memoListNotes(){
+  var arr = state.memos.filter(function(n){
+    if(memoFilter==='trash') return !!n.deleted;
+    if(n.deleted) return false;
+    if(memoFilter!=='all') return n.folder===memoFilter;
+    return true;
+  });
+  if(memoSearch){
+    var q=memoSearch.toLowerCase();
+    arr=arr.filter(function(n){
+      return (n.title||'').toLowerCase().indexOf(q)>=0 || (n.body||'').toLowerCase().indexOf(q)>=0;
+    });
+  }
+  arr.sort(function(a,b){
+    if(!!a.pinned!==!!b.pinned) return a.pinned?-1:1;
+    return (b.updated||'').localeCompare(a.updated||'');
+  });
+  return arr;
+}
+function memoExcerpt(body){
+  var txt=(body||'').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+  return txt.slice(0,42);
+}
+function memoFmtTime(iso){
+  if(!iso) return '';
+  var d=new Date(iso); if(isNaN(d)) return '';
+  var p=function(x){ return (x<10?'0':'')+x; };
+  return (d.getMonth()+1)+'月'+d.getDate()+'日 '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function renderMemoFolders(){
+  var box=el('memoFolders'); if(!box) return;
+  var chips='<button class="memo-chip'+(memoFilter==='all'?' active':'')+'" data-f="all">全部</button>';
+  state.memoFolders.forEach(function(f){
+    chips+='<button class="memo-chip'+(memoFilter===f.id?' active':'')+'" data-f="'+f.id+'" style="--fc:'+f.color+'">'+esc(f.name)+'</button>';
+  });
+  chips+='<button class="memo-chip memo-chip-new" data-f="__new">＋ 新建分类</button>';
+  chips+='<button class="memo-chip memo-chip-trash'+(memoFilter==='trash'?' active':'')+'" data-f="trash">🗑 最近删除</button>';
+  box.innerHTML=chips;
+}
+function renderMemoList(){
+  var box=el('memoList'); if(!box) return;
+  var list=memoListNotes();
+  if(!list.length){
+    box.innerHTML='<div class="memo-empty-list">'+(memoSearch?'没有匹配的笔记':'这里还没有笔记，点 ＋ 开始记录吧')+'</div>';
+    return;
+  }
+  box.innerHTML=list.map(function(n){
+    var act;
+    if(memoFilter==='trash'){
+      act='<button class="memo-act memo-restore" data-id="'+n.id+'">恢复</button><button class="memo-act memo-delperm" data-id="'+n.id+'">彻底删除</button>';
+    } else {
+      act='<button class="memo-act memo-pin" data-id="'+n.id+'">'+(n.pinned?'取消置顶':'置顶')+'</button>'
+        + '<button class="memo-act memo-star" data-id="'+n.id+'">'+(n.starred?'取消收藏':'收藏')+'</button>'
+        + '<button class="memo-act memo-del" data-id="'+n.id+'">删除</button>';
+    }
+    var star=n.starred?'<span class="memo-star-ico">★</span>':'';
+    return '<div class="memo-item'+(n.id===memoCurrent?' active':'')+'" data-id="'+n.id+'">'
+      + '<div class="memo-item-main">'
+      + '<div class="memo-item-top">'+star+'<span class="memo-item-title">'+esc(n.title||'无标题')+'</span></div>'
+      + '<div class="memo-item-ex">'+esc(memoExcerpt(n.body)||'暂无内容')+'</div>'
+      + '<div class="memo-item-time">'+memoFmtTime(n.updated||n.created)+'</div>'
+      + '<button class="memo-kebab" type="button" aria-label="更多">⋮</button>'
+      + '</div>'
+      + '<div class="memo-item-actions">'+act+'</div>'
+      + '</div>';
+  }).join('');
+}
+function renderMemoEditor(){
+  var empty=el('memoEmpty'), bodyWrap=el('memoEditBody');
+  if(!memoCurrent){ if(empty) empty.hidden=false; if(bodyWrap) bodyWrap.hidden=true; return; }
+  var n=memoFind(memoCurrent); if(!n){ if(empty) empty.hidden=false; if(bodyWrap) bodyWrap.hidden=true; return; }
+  if(empty) empty.hidden=true; if(bodyWrap) bodyWrap.hidden=false;
+  if(memoEditorLoaded!==memoCurrent){
+    el('memoTitle').value=n.title||'';
+    el('memoBody').innerHTML=n.body||'';
+    memoEditorLoaded=memoCurrent;
+  }
+  var sel=el('memoFolderSel');
+  var opts='<option value="all">未分类</option>'+state.memoFolders.map(function(f){ return '<option value="'+f.id+'">'+esc(f.name)+'</option>'; }).join('');
+  sel.innerHTML=opts; sel.value=n.folder||'all';
+  var cr=el('memoCreated'); if(cr) cr.textContent=n.created?memoFmtTime(n.created):'';
+}
+function renderMemos(){
+  memoInitData();
+  memoSaveCurrent();
+  renderMemoFolders();
+  renderMemoList();
+  renderMemoEditor();
+}
+function memoSaveCurrent(){
+  if(!memoCurrent) return;
+  var n=memoFind(memoCurrent); if(!n) return;
+  n.title=el('memoTitle').value;
+  n.body=el('memoBody').innerHTML;
+  n.updated=memoNow();
+  save();
+  var s=el('memoSaved'); if(s){ s.classList.add('show'); clearTimeout(memoSavedT); memoSavedT=setTimeout(function(){ s.classList.remove('show'); },1200); }
+}
+function memoNew(){
+  memoSaveCurrent();
+  var fid=(memoFilter!=='all'&&memoFilter!=='trash')?memoFilter:'all';
+  var n={ id:memoGenId(), title:'', body:'', folder:fid, pinned:false, starred:false, deleted:false, created:memoNow(), updated:memoNow() };
+  state.memos.unshift(n);
+  memoCurrent=n.id; memoEditorLoaded=null;
+  renderMemos();
+  var card=document.querySelector('.card[data-sec="memo"]'); if(card) card.classList.add('memo-editing');
+  if(el('memoTitle')) el('memoTitle').focus();
+}
+function memoOpen(id){
+  if(memoCurrent!==id) memoSaveCurrent();
+  memoCurrent=id; memoEditorLoaded=null;
+  renderMemos();
+  var card=document.querySelector('.card[data-sec="memo"]'); if(card) card.classList.add('memo-editing');
+  if(window.matchMedia('(max-width:760px)').matches){ var b=el('memoBody'); if(b) setTimeout(function(){ b.focus(); },60); }
+}
+function memoTogglePin(id){ var n=memoFind(id); if(n){ n.pinned=!n.pinned; n.updated=memoNow(); save(); renderMemoList(); } }
+function memoToggleStar(id){ var n=memoFind(id); if(n){ n.starred=!n.starred; n.updated=memoNow(); save(); renderMemoList(); } }
+function memoExitEdit(){ var cd=document.querySelector('.card[data-sec="memo"]'); if(cd) cd.classList.remove('memo-editing'); }
+function memoDelete(id){ var n=memoFind(id); if(n){ n.deleted=true; n.updated=memoNow(); save(); if(memoCurrent===id){ memoCurrent=null; memoEditorLoaded=null; memoExitEdit(); } renderMemos(); } }
+function memoRestore(id){ var n=memoFind(id); if(n){ n.deleted=false; n.updated=memoNow(); save(); renderMemos(); } }
+function memoDelPerm(id){ state.memos=state.memos.filter(function(n){ return n.id!==id; }); if(memoCurrent===id){ memoCurrent=null; memoEditorLoaded=null; memoExitEdit(); } save(); renderMemos(); }
+function memoMoveFolder(id,fid){ var n=memoFind(id); if(n){ n.folder=fid; n.updated=memoNow(); save(); renderMemoEditor(); } }
+function memoNewFolder(){
+  var name=prompt('给新分类起个名字：','新分类'); if(!name) return;
+  var colors=['#7FA6E8','#8FBF9F','#E89AB0','#A99BD6','#F0B35A','#7FC8C8'];
+  var color=prompt('选个标记色（十六进制，如 #7FA6E8）：', colors[state.memoFolders.length%colors.length]); if(!color) color='#7FA6E8';
+  var f={ id:'f'+Date.now().toString(36), name:name.trim()||'新分类', color:color };
+  state.memoFolders.push(f); save(); memoFilter=f.id; memoCurrent=null; memoEditorLoaded=null; renderMemos();
+}
+function placeCaret(node){ var r=document.createRange(); r.selectNodeContents(node); r.collapse(false); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+function memoInsertCheck(){
+  var ed=el('memoBody'); if(!ed) return;
+  ed.focus();
+  var item='<div class="memo-check" data-done="0"><span class="memocbx" contenteditable="false">☐</span><span class="memotxt" contenteditable="true"> </span></div>';
+  try{ document.execCommand('insertHTML', false, item); }catch(e){ ed.innerHTML+=item; }
+  var all=ed.querySelectorAll('.memo-check .memotxt'); if(all.length){ placeCaret(all[all.length-1]); }
+  memoSaveCurrent();
+}
+function memoInsertImage(file){
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){ var ed=el('memoBody'); if(!ed) return; ed.focus(); try{ document.execCommand('insertHTML',false,'<img class="memo-img" src="'+e.target.result+'" alt="图片">'); }catch(err){} memoSaveCurrent(); };
+  reader.readAsDataURL(file);
+}
+function memoVoice(){
+  var ed=el('memoBody'); if(!ed) return;
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('当前环境不支持语音录入'); return; }
+  var rec=new SR(); rec.lang='zh-CN'; rec.interimResults=false; rec.continuous=false;
+  rec.onresult=function(ev){ var txt=ev.results[0][0].transcript; ed.focus(); try{ document.execCommand('insertHTML',false,esc(txt)); }catch(e){} memoSaveCurrent(); };
+  rec.onerror=function(){ toast('语音录入失败，请重试'); };
+  try{ rec.start(); toast('请开始说话…'); }catch(e){ toast('语音录入启动失败'); }
+}
+function setSwiped(item, open){ if(!item) return; item.classList.toggle('swiped', open); var m=item.querySelector('.memo-item-main'); if(m) m.style.transform=''; }
+function attachSwipe(list){
+  if(!list) return;
+  var startX=0,startY=0,cur=null;
+  list.addEventListener('touchstart', function(e){ var item=e.target.closest('.memo-item'); if(!item) return; cur=item; startX=e.touches[0].clientX; startY=e.touches[0].clientY; }, {passive:true});
+  list.addEventListener('touchmove', function(e){
+    if(!cur) return; var dx=e.touches[0].clientX-startX, dy=e.touches[0].clientY-startY;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){ if(e.cancelable) e.preventDefault(); var x=Math.min(0,dx); var m=cur.querySelector('.memo-item-main'); if(m) m.style.transform='translateX('+x+'px)'; }
+  }, {passive:false});
+  list.addEventListener('touchend', function(){ if(!cur) return; var m=cur.querySelector('.memo-item-main'); var tx=m?m.style.transform:''; var open = tx && tx.indexOf('-')>=0 && parseInt(tx.replace(/[^0-9\-]/g,''),10)<-60; setSwiped(cur, open); cur=null; });
+}
+function memoInit(){
+  memoInitData();
+  var search=el('memoSearch'); if(search) search.addEventListener('input', function(){ memoSearch=this.value.trim(); renderMemoList(); });
+  var add=el('memoAdd'); if(add) add.addEventListener('click', memoNew);
+  var back=el('memoBack'); if(back) back.addEventListener('click', function(){ var card=document.querySelector('.card[data-sec="memo"]'); if(card) card.classList.remove('memo-editing'); });
+  var folders=el('memoFolders');
+  if(folders) folders.addEventListener('click', function(e){ var b=e.target.closest('.memo-chip'); if(!b) return; var f=b.dataset.f; if(f==='__new'){ memoNewFolder(); return; } memoFilter=f; memoCurrent=null; memoEditorLoaded=null; memoExitEdit(); renderMemos(); });
+  var list=el('memoList');
+  if(list){
+    list.addEventListener('click', function(e){
+      var act=e.target.closest('.memo-act');
+      if(act){ var id=act.dataset.id;
+        if(act.classList.contains('memo-pin')) memoTogglePin(id);
+        else if(act.classList.contains('memo-star')) memoToggleStar(id);
+        else if(act.classList.contains('memo-del')) memoDelete(id);
+        else if(act.classList.contains('memo-restore')) memoRestore(id);
+        else if(act.classList.contains('memo-delperm')) memoDelPerm(id);
+        return;
+      }
+      var kebab=e.target.closest('.memo-kebab');
+      if(kebab){ var it=kebab.closest('.memo-item'); setSwiped(it, !it.classList.contains('swiped')); return; }
+      var it2=e.target.closest('.memo-item');
+      if(it2){ memoOpen(it2.dataset.id); }
+    });
+  }
+  var title=el('memoTitle'), body=el('memoBody'), sel=el('memoFolderSel'), dbt=null;
+  if(title) title.addEventListener('input', function(){ memoLastEdit='title'; var n=memoFind(memoCurrent); if(n){ n.title=this.value; n.updated=memoNow(); save(); } });
+  if(body) body.addEventListener('input', function(){ memoLastEdit='body'; clearTimeout(dbt); dbt=setTimeout(memoSaveCurrent,250); });
+  if(sel) sel.addEventListener('change', function(){ if(memoCurrent) memoMoveFolder(memoCurrent, this.value); });
+  /* 底部工具栏：图标顺序严格按截图 画笔/清单勾选/文字排版/图片/附件/AI/美化样式 */
+  var toolsWrap=el('memoTools');
+  if(toolsWrap) toolsWrap.addEventListener('click', function(e){
+    var b=e.target.closest('.memo-tool'); if(!b) return;
+    var t=b.dataset.tool;
+    if(t==='check') memoInsertCheck();
+    else if(t==='pic'){ var f=el('memoFile'); if(f) f.click(); }
+    else if(t==='type'){ var p=el('memoStylePanel'); if(p) p.hidden=!p.hidden; }
+    else if(t==='voice') memoVoice();
+  });
+  var file=el('memoFile'); if(file) file.addEventListener('change', function(){ if(this.files&&this.files[0]) memoInsertImage(this.files[0]); this.value=''; });
+  var bold=el('memoBold'); if(bold) bold.addEventListener('click', function(){ var b=el('memoBody'); if(b){ b.focus(); try{ document.execCommand('bold'); }catch(e){} memoSaveCurrent(); } });
+  var color=el('memoColor'); if(color) color.addEventListener('input', function(){ var b=el('memoBody'); if(b){ b.focus(); try{ document.execCommand('foreColor', false, this.value); }catch(e){} memoSaveCurrent(); } });
+  /* 右上角操作栏：撤销 / 重做 / 保存（补齐手动保存入口） */
+  function memoFocusLast(){ var t=(memoLastEdit==='title')?el('memoTitle'):el('memoBody'); if(t) t.focus(); }
+  var uBtn=el('memoUndo'), rBtn=el('memoRedo'), sBtn=el('memoSaveBtn');
+  if(uBtn) uBtn.addEventListener('click', function(){ memoFocusLast(); try{ document.execCommand('undo'); }catch(e){} memoSaveCurrent(); });
+  if(rBtn) rBtn.addEventListener('click', function(){ memoFocusLast(); try{ document.execCommand('redo'); }catch(e){} memoSaveCurrent(); });
+  if(sBtn) sBtn.addEventListener('click', function(){ memoSaveCurrent(); toast('已保存 ✓'); });
+  /* 软键盘适配：把「视觉视口高度」写入 --vvh，编辑态用它锁定卡片高度，键盘只压缩正文滚动区 */
+  function memoSyncVV(){ try{ var vv=window.visualViewport; if(!vv) return; document.documentElement.style.setProperty('--vvh', vv.height+'px'); }catch(e){} }
+  if(window.visualViewport){ window.visualViewport.addEventListener('resize', memoSyncVV); window.visualViewport.addEventListener('scroll', memoSyncVV); }
+  window.addEventListener('resize', memoSyncVV);
+  memoSyncVV();
+  if(body){
+    body.addEventListener('click', function(e){ var cbx=e.target.closest('.memocbx'); if(cbx){ var item=cbx.closest('.memo-check'); if(item){ var done=item.dataset.done==='1'; item.dataset.done=done?'0':'1'; cbx.textContent=done?'☐':'☑'; var t=item.querySelector('.memotxt'); if(t) t.style.textDecoration=done?'none':'line-through'; memoSaveCurrent(); } } });
+    body.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ var t=e.target.closest('.memotxt'); if(t){ e.preventDefault(); var item=t.closest('.memo-check'); if(item){ var ni=document.createElement('div'); ni.className='memo-check'; ni.dataset.done='0'; ni.innerHTML='<span class="memocbx" contenteditable="false">☐</span><span class="memotxt" contenteditable="true"> </span>'; item.parentNode.insertBefore(ni, item.nextSibling); placeCaret(ni.querySelector('.memotxt')); memoSaveCurrent(); } } }
+      else if(e.key==='Backspace'){ var t2=e.target.closest('.memotxt'); if(t2 && t2.textContent===' '){ var it=t2.closest('.memo-check'); if(it && it.previousElementSibling && it.previousElementSibling.classList.contains('memo-check')){ e.preventDefault(); var prev=it.previousElementSibling.querySelector('.memotxt'); placeCaret(prev); it.parentNode.removeChild(it); memoSaveCurrent(); } } }
+    });
+  }
+  attachSwipe(list);
+}
+
 /* ================= 启动 ================= */
 function setJarPlaceholder(){ var inp=document.getElementById('jarInput'); if(inp){ inp.placeholder = (window.innerWidth<=760)?'记一个小目标，攒金珠子啦~':'完成小小目标，攒金珠子啦~~~'; } }
 setJarPlaceholder(); window.addEventListener('resize', setJarPlaceholder);
 load();
+memoInit();
 requestPersistentStorage();
 openDB().then(function(){
   rollover(todayStr());
