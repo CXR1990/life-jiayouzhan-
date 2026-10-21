@@ -1753,6 +1753,54 @@ function dbPut(rec){ return new Promise(function(res){ if(!db) return res(false)
 function dbDel(id){ return new Promise(function(res){ if(!db) return res(false); var t=db.transaction('media','readwrite'); t.objectStore('media')['delete'](id); t.oncomplete=function(){res(true)}; t.onerror=function(){res(false)}; }); }
 function dbGet(id){ return new Promise(function(res){ if(!db) return res(null); var r=db.transaction('media').objectStore('media').get(id); r.onsuccess=function(){res(r.result)}; r.onerror=function(){res(null)}; }); }
 
+/* ================= 图片压缩（保存前统一处理） =================
+ * 目的：手机原图动辄 3~8MB，直接存 IndexedDB 很容易撑爆浏览器配额导致保存失败。
+ * 规则：最长边缩放到 ≤1200px，再以 JPEG 质量 0.8 重新编码（体积通常降到原来的 1/5~1/10）。
+ * 例外：GIF 保持原样（重编码会丢掉动画）；非图片（视频等）原样保存（手机拍的 mp4 本身已是压缩格式）。
+ */
+var IMG_MAX_SIDE = 1200, IMG_JPEG_QUALITY = 0.8;
+function isCompressibleImage(blob){
+  return !!(blob && typeof blob.type === 'string' && /^image\//.test(blob.type) && blob.type !== 'image/gif');
+}
+function compressImage(blob){
+  return new Promise(function(res){
+    if(!isCompressibleImage(blob)) return res(blob);
+    var url;
+    try{ url = URL.createObjectURL(blob); }catch(e){ return res(blob); }
+    var img = new Image();
+    img.onload = function(){
+      var w = img.naturalWidth||0, h = img.naturalHeight||0;
+      if(!w || !h){ try{ URL.revokeObjectURL(url); }catch(e){} return res(blob); }
+      var scale = Math.min(1, IMG_MAX_SIDE / Math.max(w, h));
+      var tw = Math.max(1, Math.round(w*scale)), th = Math.max(1, Math.round(h*scale));
+      var out = blob;
+      try{
+        var c = document.createElement('canvas'); c.width = tw; c.height = th;
+        var ctx = c.getContext('2d');
+        if(ctx){
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,tw,th);  /* JPEG 无透明通道，先铺白底，避免透明区变黑块 */
+          ctx.drawImage(img, 0, 0, tw, th);
+          if(c.toBlob){
+            try{
+              c.toBlob(function(b){ try{ URL.revokeObjectURL(url); }catch(e){} res((b && b.size) ? b : out); }, 'image/jpeg', IMG_JPEG_QUALITY);
+              return;
+            }catch(e){}
+          }
+        }
+      }catch(e){}
+      try{ URL.revokeObjectURL(url); }catch(e){}
+      res(out);
+    };
+    img.onerror = function(){ try{ URL.revokeObjectURL(url); }catch(e){} res(blob); };
+    img.src = url;
+  });
+}
+/* 统一的媒体保存入口：图片先压缩再入库，视频/GIF 原样入库 */
+function saveMedia(id, blob){
+  var prep = isCompressibleImage(blob) ? compressImage(blob) : Promise.resolve(blob);
+  return prep.then(function(b){ return dbPut({ id:id, blob:b || blob }); });
+}
+
 var urlCache={};
 function mediaURL(id){
   if(urlCache[id]) return Promise.resolve(urlCache[id]);
@@ -2058,7 +2106,7 @@ el('pocketFile').addEventListener('change', function(){
   this.value='';
   files.forEach(function(f){
     var id = 'img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    dbPut({id:id, blob:f}).then(function(ok){
+    saveMedia(id, f).then(function(ok){
       if(ok){ state.pocket.push({id:id, name:f.name, addedAt:Date.now()}); save(); renderPocket(); }
       else alert('这张图片太大，浏览器存不下：'+f.name);
     });
@@ -2225,7 +2273,8 @@ function renderGym(){
       this.value='';
       files.forEach(function(f){
         var id = 'vid_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-        dbPut({id:id, blob:f}).then(function(ok){
+        /* 视频不做重编码（手机拍的 mp4 本身已是压缩格式），原样存入 IndexedDB */
+        saveMedia(id, f).then(function(ok){
           if(ok){ state.videos.push({id:id, name:f.name, part:p.k, addedAt:Date.now(), min:''}); save(); renderGym(); }
           else alert('这个视频太大，浏览器存不下：'+f.name+'\n（可以换个更小的视频，或删掉旧视频腾空间）');
         });
@@ -2391,7 +2440,7 @@ document.querySelectorAll('.joyfile').forEach(function(f){
     if(!file) return;
     var id = 'joy_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
     var img = document.querySelector('.joyphoto[data-i="'+i+'"]');
-    dbPut({id:id, blob:file}).then(function(ok){
+    saveMedia(id, file).then(function(ok){
       if(!ok){ alert('这张照片太大，浏览器存不下'); return; }
       getDay(curDate).joys[i].photo = id; save();
       mediaURL(id).then(function(u){ if(u && img){ img.src=u; img.hidden=false; } });
@@ -2443,7 +2492,7 @@ function renderNotes(){
       var file = this.files[0]; this.value='';
       if(!file) return;
       var id = 'note_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-      dbPut({id:id, blob:file}).then(function(ok){
+      saveMedia(id, file).then(function(ok){
         if(!ok){ alert('这张照片太大，浏览器存不下'); return; }
         n.photo = id; save();
         mediaURL(id).then(function(u){ if(u){ notephoto.src=u; notephoto.hidden=false; } });
@@ -3848,7 +3897,7 @@ function saveGrowthRecord(kind, dateVal, angles, metrics, note){
   var pending=angles.length, done=0;
   angles.forEach(function(a){
     var mid='img_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    dbPut({id:mid, blob:a.file}).then(function(ok){
+    saveMedia(mid, a.file).then(function(ok){
       if(ok) rec.photos.push({angle:a.angle, mediaId:mid});
       done++;
       if(done===pending){
@@ -4177,22 +4226,65 @@ function zipDecode(buf){
   }
   return out;
 }
+/* 媒体类型 ↔ 文件扩展名 映射：保证导出的照片/视频是真实可打开的文件（jpg/png/mp4…），而不是 .bin */
+function mediaExt(type){
+  var t=String(type||"");
+  var mi=t.match(/image\/(\w+)/);
+  if(mi) return (mi[1]==="jpeg")?"jpg":mi[1];
+  var mv=t.match(/video\/(\w+)/);
+  if(mv) return (mv[1]==="quicktime")?"mov":((mv[1]==="x-msvideo")?"avi":mv[1]);
+  return "bin";
+}
+function mimeFromExt(ext){
+  var e=String(ext||"").toLowerCase();
+  if(e==="jpg"||e==="jpeg") return "image/jpeg";
+  if(e==="png") return "image/png";
+  if(e==="gif") return "image/gif";
+  if(e==="webp") return "image/webp";
+  if(e==="mp4") return "video/mp4";
+  if(e==="webm") return "video/webm";
+  if(e==="mov") return "video/quicktime";
+  if(e==="avi") return "video/x-msvideo";
+  return "application/octet-stream";
+}
 function exportWorkbenchZip(){
   dbAll().then(function(all){
     return Promise.all(all.map(function(rec){
-      var ext="bin"; if(rec.blob&&rec.blob.type){ var m=rec.blob.type.match(/image\/(\w+)/); if(m) ext=(m[1]==="jpeg")?"jpg":m[1]; }
+      var ext=mediaExt(rec.blob&&rec.blob.type);
       var fname="media/"+rec.id+"."+ext;
-      return rec.blob.arrayBuffer().then(function(ab){ return { mediaId:rec.id, name:fname, data:new Uint8Array(ab) }; });
+      return rec.blob.arrayBuffer().then(function(ab){ return { mediaId:rec.id, name:fname, ext:ext, size:(ab&&ab.byteLength)||0, data:new Uint8Array(ab) }; });
     })).then(function(infos){
       var files=infos.map(function(i){ return {name:i.name, data:i.data}; });
       var photoFiles=infos.map(function(i){ return {mediaId:i.mediaId, name:i.name}; });
       var manifest={ app:"生活加油站", module:"workbench-zip", version:1, exportedAt:new Date().toISOString(), photoCount:photoFiles.length, state:state, photoFiles:photoFiles };
       files.unshift({name:"manifest.json", data:new TextEncoder().encode(JSON.stringify(manifest))});
+      /* 脱离本应用也能看懂：附一份人类可读索引 + 说明（照片/视频都是真实可打开的文件） */
+      var enc=new TextEncoder();
+      var csvRows=["文件位置,媒体ID,类型,大小(字节)"];
+      infos.forEach(function(i){ csvRows.push([i.name, i.mediaId, (i.ext==="bin"?"未知":i.ext), i.size].join(",")); });
+      files.push({name:"索引.csv", data:enc.encode("\ufeff"+csvRows.join("\r\n"))});
+      var readme=""
+        +"生活加油站 · 完整工作台备份\r\n"
+        +"导出时间："+new Date().toLocaleString()+"\r\n"
+        +"媒体文件数："+infos.length+"\r\n"
+        +"\r\n"
+        +"【里面有什么】\r\n"
+        +"1. media/ —— 全部照片与视频，都是真实文件（jpg / png / gif / webp / mp4 / webm / mov），\r\n"
+        +"   用系统自带看图软件、相册、播放器就能直接打开，不需要本应用。\r\n"
+        +"2. manifest.json —— 全部文字记录 + 媒体与文件的对应关系，供本应用导入还原。\r\n"
+        +"3. 索引.csv —— 文件清单，可用 Excel / WPS 打开。\r\n"
+        +"\r\n"
+        +"【怎么还原】\r\n"
+        +"在本应用「备份与恢复」里点「导入整个工作台」，选择这个 ZIP 即可完整恢复。\r\n"
+        +"\r\n"
+        +"【保管建议】\r\n"
+        +"多存几份：手机本地 / SD 卡、自己的邮箱、网盘各一份，并每 2~3 年重新导出一次。\r\n";
+      files.push({name:"说明.txt", data:enc.encode(readme)});
       var zipBytes=zipEncode(files);
       var blob=new Blob([zipBytes],{type:"application/zip"});
       var d=new Date(), pad=function(n){return (n<10?"0":"")+n;}, fn="workbench-backup-"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes())+".zip";
       var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fn; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
-      var msg=el("workbenchBakMsg"); if(msg) msg.textContent="已导出整个工作台（ZIP，"+photoFiles.length+" 张照片）";
+      var msg=el("workbenchBakMsg"); if(msg) msg.textContent="已导出整个工作台（ZIP，"+photoFiles.length+" 个照片/视频文件）";
       clearDirty();
     });
   });
@@ -4211,7 +4303,7 @@ function importWorkbenchZip(file){
       Promise.all(photoFiles.map(function(pf){
         var b=z[pf.name]; if(!b) return 0;
         var ext=(pf.name.split(".").pop()||"bin").toLowerCase();
-        var type=(ext==="jpg")?"image/jpeg":((ext==="png")?"image/png":((ext==="gif")?"image/gif":"application/octet-stream"));
+        var type=mimeFromExt(ext);
         return dbPut({id:pf.mediaId, blob:new Blob([b],{type:type})}).then(function(){return 1;});
       })).then(function(){
         state=manifest.state;
@@ -4520,10 +4612,17 @@ setJarPlaceholder(); window.addEventListener('resize', setJarPlaceholder);
 load();
 memoInit();
 requestPersistentStorage();
-openDB().then(function(){
-  rollover(todayStr());
-  renderAll();
-});
+/* 启动即渲染：无论 IndexedDB 是否可用都要把本地历史数据完整画出来。
+   旧写法只在 openDB().then 成功分支里渲染，一旦 IndexedDB 被禁用/失败，整个工作台会空白。 */
+(function(){
+  var bootRender = function(){
+    try{ rollover(todayStr()); }catch(e){}
+    try{ renderAll(); }catch(e){ if(window.console){ console.warn('首次渲染失败：', e); } }
+  };
+  try{
+    openDB().then(bootRender, bootRender);   /* 成功/失败都渲染，照片加载失败不影响文字记录 */
+  }catch(e){ bootRender(); }
+})();
 })();
 </script>
   <!-- 美美进化动画播放器 -->
