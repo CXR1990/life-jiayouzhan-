@@ -2348,6 +2348,7 @@ var HEALTH = [
 ];
 var SKIN = [
   {k:'物理防晒', e:'⛱️'}, {k:'涂防晒', e:'🧴'}, {k:'敷面膜', e:'🪞'}, {k:'晚涂A醇', e:'🌙'},
+  {k:'涂唇膏', e:'💋'},
   {k:'涂护手霜', e:'🧤'}, {k:'涂护脚霜', e:'🦶'}
 ];
 /* 习惯养成：与每日养生/肌肤护理同构，由 renderCheckGrid 渲染，勾选自动触发金币 +1 */
@@ -2725,6 +2726,9 @@ function renderStats(){
   /* 护肤各项目（本月 vs 上月） */
   var skn = SKIN.map(function(it){ return [it.k, gridCnt(keys,'skin',it.k), '次', gridCnt(pkeys,'skin',it.k)]; });
   html += stGroup('pink','🧴 肌肤护理（打卡次数）', skn);
+  /* 习惯养成各项目（本月 vs 上月） */
+  var hbt = HABIT.map(function(it){ return [it.k, gridCnt(keys,'habit',it.k), '次', gridCnt(pkeys,'habit',it.k)]; });
+  html += stGroup('lav','🌈 习惯养成（打卡次数）', hbt);
   el('statsBody').innerHTML = html;
 }
 
