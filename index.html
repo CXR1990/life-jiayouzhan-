@@ -964,7 +964,7 @@
 
   /* ===== 时光小账 ===== */
   .card[data-sec="track"]{ background:#FCFBF4; border-color:#EFE7D6; }
-  .card[data-sec="track"] .sec-head{ margin-bottom:72px; }
+  .card[data-sec="track"] .sec-head{ margin-bottom:32px; } /* 32 + 日期条 40 = 原 72，下方元素位置不变 */
   .tbox{ border-radius:16px; padding:14px 16px 12px; }
   .tbox-timer{ background:#F5FAF3; border:1px solid #DFEDD8; }
   .tbox-month{ background:#FDF3F0; border:1px solid #F3DED6; margin-top:0; padding-bottom:16px; }
@@ -1018,6 +1018,59 @@
   .track-below .trackduck{ flex:0 0 auto; max-width:190px; width:42%; min-width:150px; margin:0; align-self:flex-start; }
   .track-below .tbox-month{ flex:1 1 240px; min-width:220px; }
   @media (max-width:560px){ .track-below{ flex-direction:column; } .track-below .trackduck{ width:auto; max-width:200px; align-self:center; } .track-below .tbox-month{ width:100%; } }
+
+  /* 时光小账 · 日期选择条（居中，标题正下方） */
+  .track-datebar{ position:relative; display:flex; align-items:center; justify-content:center; gap:10px; margin:0 auto 8px; }
+  .tdb-arrow{ width:32px; height:32px; flex:none; border:1px solid #EFE7D6; background:#fff; color:#B79B6E;
+    border-radius:10px; cursor:pointer; font-size:11px; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .tdb-arrow:hover{ color:var(--accent-deep); border-color:var(--accent); }
+  .tdb-date{ font-family:inherit; font-size:15px; font-weight:700; color:#8A5A3B; background:#FFFDF7;
+    border:1px solid #EFE7D6; border-radius:12px; padding:6px 18px; cursor:pointer; letter-spacing:.5px;
+    font-variant-numeric:tabular-nums; box-shadow:0 1px 4px rgba(224,150,88,.06); }
+  .tdb-date:hover{ border-color:var(--accent); background:#fff; }
+  .track-cal{ display:none; position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%); z-index:40;
+    width:268px; background:#fff; border:1px solid #EFE7D6; border-radius:16px;
+    box-shadow:0 12px 32px rgba(180,150,100,.18); padding:12px; box-sizing:border-box; }
+  .track-cal.show{ display:block; }
+  .tcal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .tcal-title{ font-size:14px; font-weight:700; color:#8A5A3B; font-variant-numeric:tabular-nums; }
+  .tcal-nav{ display:flex; gap:6px; }
+  .tcal-nav button{ width:26px; height:26px; border:1px solid #EFE7D6; background:#fff; color:#B79B6E;
+    border-radius:8px; cursor:pointer; font-size:12px; line-height:1; }
+  .tcal-nav button:hover{ color:var(--accent-deep); border-color:var(--accent); }
+  .tcal-week{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px; }
+  .tcal-week span{ text-align:center; font-size:11px; color:#C2B49B; }
+  .tcal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .tcal-grid span{ height:32px; }
+  .tcal-cell{ height:32px; border:none; background:transparent; border-radius:8px; font-size:12px;
+    color:var(--ink); cursor:pointer; font-family:inherit; font-variant-numeric:tabular-nums; }
+  .tcal-cell:hover{ background:var(--accent-soft); }
+  .tcal-cell.today{ box-shadow:inset 0 0 0 1px var(--accent); color:var(--accent-deep); }
+  .tcal-cell.sel{ background:var(--accent); color:#fff; font-weight:700; box-shadow:none; }
+  .tcal-foot{ margin-top:10px; text-align:center; }
+  .tcal-foot button{ border:none; background:var(--accent-soft); color:var(--accent-deep);
+    border-radius:10px; padding:5px 14px; font-size:12px; cursor:pointer; font-family:inherit; }
+
+  /* ===== 心愿清单（与时光小账同配色/同卡片/同排版） ===== */
+  .card[data-sec="wish"]{ background:#FCFBF4; border-color:#EFE7D6; }
+  .card[data-sec="wish"] .sec-head{ justify-content:center; margin-bottom:16px; }
+  .tbox-wish{ background:#F5FAF3; border:1px solid #DFEDD8; }
+  .wish-input{ height:36px; font-size:13px; background:#fff; margin-bottom:12px; }
+  .wish-input::placeholder{ color:#C9C2B8; }
+  .wishlist{ min-height:20px; }
+  .wishitem{ display:flex; align-items:flex-start; gap:10px; padding:9px 12px; border-radius:12px;
+    background:#fff; border:1px solid #F1EADC; margin-bottom:8px; font-size:14px; line-height:1.5;
+    color:var(--ink); cursor:default; }
+  .wishitem:last-child{ margin-bottom:0; }
+  .wishitem:hover{ border-color:#E8DCC8; }
+  .wishitem .cb{ flex:none; margin-top:1px; -webkit-touch-callout:none; }
+  .wishitem .wi-text{ flex:1 1 auto; min-width:0; outline:none; word-break:break-word;
+    border-radius:6px; padding:0 2px; cursor:text; white-space:pre-wrap; }
+  .wishitem .wi-text:focus{ background:#FFFDF6; box-shadow:0 0 0 1px #F0E4D0; }
+  .wishitem.done{ background:#FAF8F3; border-color:#F1EADC; }
+  .wishitem.done .wi-text{ color:#BDB6AB; text-decoration:line-through; }
+  .wishitem .wi-text.zoomAnim{ animation:zoomburst 1.15s cubic-bezier(.2,1.3,.4,1); z-index:2; position:relative; }
+  .wish-empty{ font-size:13px; color:#C6BEB2; padding:14px 4px; text-align:center; }
 /* ===== 美美进化动画档案 ===== */
 .card[data-sec="growth"]{ background:#F1F8F2; border-color:#DCEFE2; }
 .gtabs{ display:flex; flex-wrap:nowrap; gap:4px; margin-bottom:14px; }
@@ -1152,6 +1205,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="navttl">🐱 板块导航</div>
       <div class="navitem" data-nav="jar"><span class="nico"><svg width="15" height="15" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="nb1" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FFF7DC"/><stop offset=".45" stop-color="#F3CF6F"/><stop offset="1" stop-color="#C7983C"/></radialGradient></defs><circle cx="10" cy="10" r="9" fill="url(#nb1)"/><ellipse cx="6.8" cy="6.2" rx="2.9" ry="1.9" fill="#FFFFFF" opacity=".85"/></svg></span>小罐目标</div>
       <div class="navitem" data-nav="track"><span class="nico">⏰</span>时光小账</div>
+      <div class="navitem" data-nav="wish"><span class="nico">🌟</span>心愿清单</div>
 <div class="navitem" data-nav="todo"><span class="nico">📋</span>待办清单</div>
       <div class="navitem" data-nav="english"><span class="nico">📚</span>英语学习</div>
       <div class="navitem" data-nav="fitness"><span class="nico">💪</span>运动健身</div>
@@ -1193,6 +1247,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <h2>时光小账</h2>
     </div>
 
+    <!-- 日期选择：只筛选上方计时记录，下方本月汇总仍统计整月 -->
+    <div class="track-datebar">
+      <button type="button" class="tdb-arrow" id="trackPrevDay" title="前一天" aria-label="前一天">◀</button>
+      <button type="button" class="tdb-date" id="trackDateBtn" title="点击选择日期">-</button>
+      <button type="button" class="tdb-arrow" id="trackNextDay" title="后一天" aria-label="后一天">▶</button>
+      <div class="track-cal" id="trackCal"></div>
+    </div>
+
     <!-- 计时 + 时间轴（极浅奶绿底） -->
     <div class="tbox tbox-timer">
       <div class="track-io">
@@ -1222,6 +1284,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         <div class="plegend" id="trackLegend"></div>
       </div>
     </div>
+    </div>
+  </div>
+
+  <!-- 心愿清单（样式严格对标时光小账） -->
+  <div class="card" data-sec="wish">
+    <div class="sec-head">
+      <div class="sec-ico" style="background:var(--mint-soft);">🌟</div>
+      <h2>心愿清单</h2>
+    </div>
+    <div class="tbox tbox-wish">
+      <input type="text" id="wishInput" class="wish-input" placeholder="写下你的心愿，回车即可添加">
+      <div class="wishlist" id="wishList"></div>
     </div>
   </div>
 
@@ -1735,7 +1809,7 @@ function save(){
 function load(){
   try{
     var raw = localStorage.getItem(STORE_KEY);
-    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; } }
+    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; state.wishes=state.wishes||[]; } }
   }catch(e){}
 }
 
@@ -3440,6 +3514,7 @@ function startTrackLive(){
   }, 1000);
 }
 function renderTrack(){
+  renderTrackDate();
   var day = getDay(curDate);
   var a = state.activeTrack || null;
   var btn = el('trackToggle'), live = el('trackLive');
@@ -3566,6 +3641,212 @@ var TRACK_PRESETS = ['学习','吃饭','做家务','运动','刷视频','看小�
   });
   document.addEventListener('click', function(e){
     if(panel.classList.contains('show') && !panel.contains(e.target) && e.target!==btn) close();
+  });
+})();
+
+/* 时光小账：日期选择条（只筛选计时记录；本月汇总仍按整月统计，逻辑不变） */
+var trackCalYM = null;
+function trackCalBuild(){
+  var box = el('trackCal'); if(!box) return;
+  var d = new Date(curDate+'T00:00:00');
+  if(!trackCalYM) trackCalYM = {y:d.getFullYear(), m:d.getMonth()};
+  var y = trackCalYM.y, m = trackCalYM.m;
+  var start = new Date(y, m, 1).getDay();
+  var days = new Date(y, m+1, 0).getDate();
+  var wk = ['日','一','二','三','四','五','六'];
+  var h = '<div class="tcal-head"><span class="tcal-title">'+y+' 年 '+(m+1)+' 月</span>'
+    + '<div class="tcal-nav"><button type="button" data-cm="-1" aria-label="上一月">‹</button>'
+    + '<button type="button" data-cm="1" aria-label="下一月">›</button></div></div>'
+    + '<div class="tcal-week">'+wk.map(function(w){ return '<span>'+w+'</span>'; }).join('')+'</div>'
+    + '<div class="tcal-grid">';
+  var i;
+  for(i=0;i<start;i++) h += '<span></span>';
+  for(i=1;i<=days;i++){
+    var key = y+'-'+pad(m+1)+'-'+pad(i);
+    var cls = 'tcal-cell'+(key===todayStr()?' today':'')+(key===curDate?' sel':'');
+    h += '<button type="button" class="'+cls+'" data-d="'+key+'">'+i+'</button>';
+  }
+  h += '</div><div class="tcal-foot"><button type="button" data-today="1">回到今天</button></div>';
+  box.innerHTML = h;
+}
+function trackCalOpen(){
+  var box = el('trackCal'); if(!box) return;
+  trackCalYM = null; trackCalBuild(); box.classList.add('show');
+}
+function trackCalClose(){ var box = el('trackCal'); if(box) box.classList.remove('show'); }
+(function trackDateInit(){
+  var btn = el('trackDateBtn'), box = el('trackCal');
+  if(!btn || !box) return;
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(box.classList.contains('show')) trackCalClose(); else trackCalOpen();
+  });
+  box.addEventListener('click', function(e){
+    var t = e.target;
+    var cm = t.getAttribute && t.getAttribute('data-cm');
+    if(cm){
+      var d = new Date(curDate+'T00:00:00');
+      if(!trackCalYM) trackCalYM = {y:d.getFullYear(), m:d.getMonth()};
+      var nm = trackCalYM.m + (+cm);
+      trackCalYM = nm<0 ? {y:trackCalYM.y-1, m:11} : (nm>11 ? {y:trackCalYM.y+1, m:0} : {y:trackCalYM.y, m:nm});
+      trackCalBuild(); return;
+    }
+    if(t.getAttribute && t.getAttribute('data-today')){
+      curDate = todayStr(); rollover(curDate); renderAll(); trackCalClose(); return;
+    }
+    var dd = t.getAttribute && t.getAttribute('data-d');
+    if(dd){ curDate = dd; rollover(curDate); renderAll(); trackCalClose(); }
+  });
+  document.addEventListener('click', function(e){
+    if(box.classList.contains('show') && !box.contains(e.target) && e.target!==btn) trackCalClose();
+  });
+  el('trackPrevDay').addEventListener('click', function(){ trackCalClose(); shiftDay(-1); });
+  el('trackNextDay').addEventListener('click', function(){ trackCalClose(); shiftDay(1); });
+})();
+function renderTrackDate(){
+  var b = el('trackDateBtn'); if(b) b.textContent = curDate;
+}
+
+/* ================= 心愿清单 ================= */
+function wishInit(){ if(!Array.isArray(state.wishes)) state.wishes = []; }
+/* 下一个序号：取现有条目开头数字的最大值 +1，删改后不会重号 */
+function wishNextNo(){
+  var mx = 0;
+  state.wishes.forEach(function(w){
+    var m = /^\s*(\d+)/.exec(w.text || '');
+    if(m){ var n = parseInt(m[1], 10); if(!isNaN(n) && n > mx) mx = n; }
+  });
+  return mx + 1;
+}
+function renderWishes(){
+  var box = el('wishList'); if(!box) return;
+  wishInit();
+  if(!state.wishes.length){ box.innerHTML = '<div class="wish-empty">暂无心愿，写下新目标🐱</div>'; return; }
+  var pend = [], done = [];
+  state.wishes.forEach(function(w, i){ (w.done?done:pend).push({w:w, i:i}); });
+  box.innerHTML = pend.concat(done).map(function(o){
+    return '<div class="wishitem'+(o.w.done?' done':'')+'" data-wi="'+o.i+'">'
+      + '<label class="cb"><input type="checkbox" class="wishchk" data-wi="'+o.i+'"'+(o.w.done?' checked':'')+'><span class="box"></span></label>'
+      + '<div class="wi-text" contenteditable="true" data-wi="'+o.i+'">'+esc(o.w.text)+'</div>'
+      + '</div>';
+  }).join('');
+}
+/* 完成后沉到末尾，取消完成后回到未完成区末尾 */
+function wishMove(w){
+  var i = state.wishes.indexOf(w); if(i>=0) state.wishes.splice(i, 1);
+  if(w.done){ state.wishes.push(w); return; }
+  var fd = -1;
+  for(var k=0;k<state.wishes.length;k++){ if(state.wishes[k].done){ fd=k; break; } }
+  if(fd < 0) state.wishes.push(w); else state.wishes.splice(fd, 0, w);
+}
+var wishZoom = null;   /* 勾选后给文字套用与待办清单一致的放大动画 */
+/* 长按删除：不显示任何按钮，长按 0.5 秒后弹确认 */
+var wishLP = {timer:null, fired:false, item:null, x:0, y:0};
+function wishLPClear(){ if(wishLP.timer){ clearTimeout(wishLP.timer); wishLP.timer=null; } }
+function wishLPStart(e, item){
+  wishLPClear();
+  wishLP.fired = false; wishLP.item = item;
+  var pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+  wishLP.x = pt.clientX||0; wishLP.y = pt.clientY||0;
+  wishLP.timer = setTimeout(function(){
+    wishLP.timer = null; wishLP.fired = true;
+    var w = state.wishes[+item.getAttribute('data-wi')];
+    if(!w) return;
+    if(!confirm('删除心愿「'+w.text+'」？')) return;
+    var i = state.wishes.indexOf(w);
+    if(i>=0) state.wishes.splice(i,1);
+    save(); renderWishes();
+  }, 500);
+}
+(function wishInitBind(){
+  var inp = el('wishInput'), list = el('wishList');
+  if(!inp || !list) return;
+  list.addEventListener('pointerdown', function(e){
+    var it = e.target.closest && e.target.closest('.wishitem'); if(!it) return;
+    /* 鼠标停在文字上是在编辑文字，不触发长按删除 */
+    if(e.pointerType === 'mouse' && e.target.closest && e.target.closest('.wi-text')) return;
+    wishLPStart(e, it);
+  });
+  list.addEventListener('pointermove', function(e){
+    if(!wishLP.timer) return;
+    if(Math.abs((e.clientX||0)-wishLP.x) > 10 || Math.abs((e.clientY||0)-wishLP.y) > 10) wishLPClear();
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+    list.addEventListener(ev, wishLPClear);
+  });
+  if(!window.PointerEvent){
+    list.addEventListener('mousedown', function(e){
+      var it = e.target.closest && e.target.closest('.wishitem'); if(!it) return;
+      if(e.target.closest && e.target.closest('.wi-text')) return;
+      wishLPStart(e, it);
+    });
+    ['mouseup','mouseleave'].forEach(function(ev){ list.addEventListener(ev, wishLPClear); });
+  }
+  list.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  var numLock = false;
+  /* 输入即自动带序号：本次输入的第一个字符前补一次，之后删掉序号不再重复补 */
+  inp.addEventListener('input', function(){
+    if(!this.value){ numLock = false; return; }
+    if(numLock) return;
+    if(/^\s*\d/.test(this.value)) return;
+    numLock = true;
+    var pre = wishNextNo() + '. ';
+    var pos = (this.selectionStart==null ? this.value.length : this.selectionStart) + pre.length;
+    this.value = pre + this.value;
+    try{ this.setSelectionRange(pos, pos); }catch(err){}
+  });
+  inp.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter') return;
+    var v = this.value.trim(); if(!v) return;
+    if(!/^\s*\d/.test(v)) v = wishNextNo() + '. ' + v;   /* 兜底：粘贴等绕过自动补号的情况 */
+    wishInit();
+    state.wishes.push({text:v, done:false});
+    this.value = ''; numLock = false;
+    save(); renderWishes();
+  });
+  /* 打卡框：音效与待办清单完全一致（playFanfare + 文字放大动画） */
+  list.addEventListener('change', function(e){
+    var c = e.target.closest && e.target.closest('.wishchk'); if(!c) return;
+    var w = state.wishes[+c.getAttribute('data-wi')]; if(!w) return;
+    w.done = c.checked;
+    wishMove(w);
+    save();
+    if(w.done){ playFanfare(); wishZoom = state.wishes.indexOf(w); }
+    renderWishes();
+    if(wishZoom != null){
+      var t = list.querySelector('.wishitem[data-wi="'+wishZoom+'"] .wi-text');
+      if(t){ t.classList.add('zoomAnim'); t.addEventListener('animationend', function(){ t.classList.remove('zoomAnim'); }); }
+      wishZoom = null;
+    }
+  });
+  /* 文字（含序号）可直接点进去改，序号能改也能删 */
+  list.addEventListener('input', function(e){
+    var t = e.target.closest && e.target.closest('.wi-text'); if(!t) return;
+    var w = state.wishes[+t.getAttribute('data-wi')]; if(!w) return;
+    w.text = t.textContent.replace(/\s+$/,'');
+    save();
+  });
+  list.addEventListener('blur', function(e){       /* blur 不冒泡，用捕获阶段 */
+    var t = e.target.closest && e.target.closest('.wi-text'); if(!t) return;
+    var w = state.wishes[+t.getAttribute('data-wi')]; if(!w) return;
+    w.text = t.textContent.replace(/\s+$/,'');
+    save();
+  }, true);
+  list.addEventListener('keydown', function(e){
+    var t = e.target.closest && e.target.closest('.wi-text'); if(!t) return;
+    if(e.key === 'Enter'){ e.preventDefault(); t.blur(); }
+  });
+  list.addEventListener('paste', function(e){
+    var t = e.target.closest && e.target.closest('.wi-text'); if(!t) return;
+    e.preventDefault();
+    var txt = (e.clipboardData || window.clipboardData).getData('text') || '';
+    try{ document.execCommand('insertText', false, txt); }catch(err){}
+  });
+  /* 长按删除后紧随的 click 不再误触发勾选 */
+  list.addEventListener('click', function(e){
+    if(!wishLP.fired) return;
+    wishLP.fired = false;
+    if(e.target.closest && e.target.closest('.cb')){ e.preventDefault(); e.stopPropagation(); }
   });
 })();
 
@@ -3768,6 +4049,7 @@ function renderAll(){
   safeRender(function(){ renderFinStats(); renderFinCharts(); renderNotes(); renderPocket(); });
   safeRender(function(){ renderEngStats(); renderStats(); renderSleepCharts(); renderJar(); renderTrack(); renderPeriod(); renderGrowth(); });
   safeRender(renderMemos);
+  safeRender(renderWishes);
 }
 /* 板块渲染容错包装：任何单个板块渲染异常都不影响其他板块，控制台给出提示便于排查 */
 function safeRender(fn){
