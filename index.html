@@ -340,6 +340,19 @@
   .finbox .row.big{ font-weight:bold; }
   .finbox .sep{ border-top:1px dashed #EAD9BF; margin:7px 0; }
 
+  /* 财务 · 批量补录历史月份 */
+  .finbatch{ background:#FFF7EA; border:1px solid #F0E0C4; border-radius:14px; padding:12px 14px; margin-bottom:14px; }
+  .finbatch .fb-ttl{ font-size:12px; font-weight:700; color:var(--accent-deep); margin-bottom:8px; }
+  .finbatch .fb-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .finbatch .fb-lab{ font-size:12px; color:var(--sub); flex:none; }
+  .finbatch .fb-unit{ font-size:12px; color:var(--sub); }
+  .finbatch .fb-sel{ width:auto; flex:none; font-size:13px; padding:6px 8px; border-radius:10px; background:#fff; }
+  .finbatch .fb-row{ display:flex; gap:10px; margin-bottom:8px; }
+  .finbatch .fb-row .f{ flex:1; }
+  .finbatch .fb-row .f label{ display:block; font-size:12px; color:var(--sub); margin-bottom:4px; }
+  .finbatch .fb-tip{ font-size:11px; color:#B79B6E; line-height:1.6; }
+  .finbatch .fb-tip.ok{ color:#4E8A66; }
+
   /* ===== 7 睡眠 / 8 微光 ===== */
   .joys .f{ margin-bottom:66px; }
   .joys .joyhead{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
@@ -468,6 +481,7 @@
   .card[data-sec="finance"].card-open .sec-head{ margin-bottom:14px; }
   .card[data-sec="finance"].card-open .finrow{ margin-bottom:0; flex:0 0 auto; }
   .card[data-sec="finance"].card-open .finbox{ margin-bottom:0; flex:0 0 auto; }
+  .card[data-sec="finance"].card-open .finbatch{ flex:0 0 auto; margin-top:14px; margin-bottom:0; overflow:visible; }
   .card[data-sec="finance"].card-open .fincharts{ flex:1 1 auto; min-height:0; margin-top:16px; }
   .card[data-sec="finance"].card-open .schart{ flex:1 1 0; min-height:150px; }
   .card[data-sec="finance"].card-open .schart .schart-body{ display:flex; }
@@ -483,6 +497,17 @@
   .card[data-sec="sleep"].card-open .schart{ flex:1 1 0; min-height:0; }
   .card[data-sec="sleep"].card-open .schart .schart-body{ display:flex; }
   .card[data-sec="sleep"].card-open .schart svg{ width:100%; height:100%; display:block; }
+
+  /* 待办清单：手机端「分类 + 输入框 + 添加」吸附在屏幕最底部，上方工作/生活/学习区独立滚动 */
+  .card[data-sec="todo"].card-open{ display:flex; flex-direction:column; overflow:hidden; padding-bottom:0; }
+  .card[data-sec="todo"].card-open .sec-head{ flex:0 0 auto; margin-bottom:12px; }
+  .card[data-sec="todo"].card-open .todo-scroll{ flex:1 1 auto; min-height:0; overflow-y:auto;
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding-bottom:12px; }
+  .card[data-sec="todo"].card-open .addrow{ flex:0 0 auto; margin:0 -16px; z-index:5;
+    padding:10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    background:#fff; border-top:1px solid #F2E9DC; box-shadow:0 -6px 16px rgba(224,150,88,.10); }
+  /* 软键盘弹出时（iOS 键盘是浮层，不会压缩布局）：整卡片缩到可视高度，输入栏仍贴在键盘上方 */
+  .card[data-sec="todo"].card-open.kb{ height:var(--vvh,100dvh); min-height:var(--vvh,100dvh); flex-basis:var(--vvh,100dvh); }
 
   /* ===== 备忘录（对标华为原生备忘录） ===== */
   .card[data-sec="memo"]{ background:#EAF2FB; border-color:#CFE0F2; }
@@ -1306,9 +1331,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <h2 data-page-node-id="L4fIVeM3dViu2vOXaNOihR">待办清单</h2>
       <span class="hint" data-page-node-id="9Y0bphjFlaFtI5hHL7rcbg">右键事件选优先级<br data-page-node-id="2UUF7wKG1tGQUky5uGgxUi"><span class="pdot p0"></span> 普通 &nbsp;<span class="pdot p1"></span> 重要 &nbsp;<span class="pdot p2"></span> 紧急</span>
     </div>
+    <div class="todo-scroll" id="todoScroll">
     <div class="todo-group work" data-page-node-id="Xf0IhD9LC26MnshCdnuGzv"><div class="gname" data-page-node-id="iuA5HxzYK7CORtRNeAeHzV">💼 工作</div><div id="todoWork"></div><div class="todone" id="todoWorkDone"></div></div>
     <div class="todo-group life" data-page-node-id="FvqBgXGNmWJJK5huSakcdl"><div class="gname" data-page-node-id="4nPBGv1hXuqfkm0OhiF6on">🏠 生活</div><div id="todoLife"></div><div class="todone" id="todoLifeDone"></div></div>
     <div class="todo-group study"><div class="gname">📚 学习</div><div id="todoStudy"></div><div class="todone" id="todoStudyDone"></div></div>
+    </div>
     <div class="addrow" data-page-node-id="mxNO7zyGNV4VHHKKuyt0Tk">
       <select id="todoCat" style="width:86px;flex:none;" data-page-node-id="y2EE2XfUEBH3GtNIS6h2k0">
         <option value="work" data-page-node-id="Vny04coIODVAKQA1PPKX7B">工作</option>
@@ -1446,8 +1473,29 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="f" data-page-node-id="PrfGlNsLXDSSEAl7Ilc1Ar"><label data-page-node-id="hK3kvTWwI7y5T4oy5qWcMI">今日总支出（元）</label><input type="number" id="finExp" min="0" step="0.01" placeholder="只填数字" data-page-node-id="erW6NeSMsZAW9GIPSauZH3"></div>
       <div class="f" data-page-node-id="2fkqukBUywmAX2Ff3q16az"><label data-page-node-id="edhLLB2DOIjlNyw8KqHXBB">今日总收入（元）</label><input type="number" id="finInc" min="0" step="0.01" placeholder="只填数字" data-page-node-id="q6iaCgn5NgxYVgDh2oHTWP"></div>
     </div>
+    <!-- 批量补录历史月份 -->
+    <div class="finbatch">
+      <div class="fb-ttl">📥 批量补录历史月份</div>
+      <div class="fb-line">
+        <span class="fb-lab">选择年月</span>
+        <select id="fbYear" class="fb-sel"></select>
+        <span class="fb-unit">年</span>
+        <select id="fbMonth" class="fb-sel"></select>
+        <span class="fb-unit">月</span>
+        <button class="btn small ghost" id="fbNow" type="button">回到当前月</button>
+      </div>
+      <div class="fb-row">
+        <div class="f"><label>每日收入（元）</label><input type="number" id="fbInc" min="0" step="0.01" placeholder="留空表示不改"></div>
+        <div class="f"><label>每日支出（元）</label><input type="number" id="fbExp" min="0" step="0.01" placeholder="留空表示不改"></div>
+      </div>
+      <div class="fb-line">
+        <button class="btn small" id="fbFill" type="button">批量填入整月</button>
+        <button class="btn small danger" id="fbClear" type="button">清空该月</button>
+      </div>
+      <div class="fb-tip" id="fbTip">选好年月 → 填每日收入 / 支出 → 点「批量填入整月」，下方统计与趋势图会自动更新。</div>
+    </div>
     <div class="finbox" data-page-node-id="KsawVkfumCIXZ17to0iNHI">
-      <div class="ttl" data-page-node-id="A52DCuPjc9HDXA1I0HMpyC">📊 本月统计（自动汇总）</div>
+      <div class="ttl" id="finBoxTtl" data-page-node-id="A52DCuPjc9HDXA1I0HMpyC">📊 本月统计（自动汇总）</div>
       <div class="row" data-page-node-id="zJjOIDdHsa7M0bqrHbf13F"><span class="k" data-page-node-id="oJE1JqnsjNZjQrIBHmLKxR">本月总收入</span><span id="mInc" data-page-node-id="BtwFwlW7HHZKc8JOD8ORtX">¥0</span></div>
       <div class="row" data-page-node-id="RnaKHsbAuyJvx7qAj5AxBR"><span class="k" data-page-node-id="pnobWvHPN9VxdGUM7mzn8F">本月总支出</span><span id="mExp" data-page-node-id="sHuvnBva3Fx1iqdwmzcE2m">¥0</span></div>
       <div class="row big" data-page-node-id="oKcExln6tefLB7bYcceD9z"><span class="k" data-page-node-id="8B2f5BBzXhAvE8jvLuK7HE">本月结余</span><span id="mBal" data-page-node-id="k8bQstUEeddZRrKMP2mmka">¥0</span></div>
@@ -2416,9 +2464,10 @@ function renderGym(){
 /* ================= 4/5 打卡宫格 ================= */
 var HEALTH = [
   {k:'晨起温水', e:'🥛'}, {k:'梳头百下', e:'💁'}, {k:'揉耳朵', e:'👂'},
-  {k:'凯格尔运动', e:'🏃'}, {k:'核桃甩背', e:'🌰'}, {k:'吃西红柿', e:'🍅'},
+  {k:'凯格尔运动', e:'🏃'}, {k:'核桃甩背', e:'🌰'}, {k:'番茄+油', e:'🍅'},
   {k:'揉腹', e:'🤲'}, {k:'敲肝胆经', e:'👊'}, {k:'古法养生操', e:'🧘'}, {k:'十一点前睡', e:'🌙'}, {k:'泡脚脚', e:'🦶'},
-  {k:'泡沫轴滚背', e:'🛞'}, {k:'绕舌30下', e:'👅'}, {k:'靠墙静蹲', e:'🧍'},   {k:'黑芝麻蒸蛋', e:'🥚'}, {k:'吃营养品', e:'💊'}, {k:'倒立两分钟', e:'🙃'}
+  {k:'泡沫轴滚背', e:'🛞'}, {k:'绕舌30下', e:'👅'}, {k:'靠墙静蹲', e:'🧍'},   {k:'黑芝麻蒸蛋', e:'🥚'}, {k:'吃营养品', e:'💊'}, {k:'倒立两分钟', e:'🙃'},
+  {k:'太溪穴200', e:'👣'}
 ];
 var SKIN = [
   {k:'物理防晒', e:'⛱️'}, {k:'涂防晒', e:'🧴'}, {k:'敷面膜', e:'🪞'}, {k:'晚涂A醇', e:'🌙'},
@@ -2428,8 +2477,26 @@ var SKIN = [
 /* 习惯养成：与每日养生/肌肤护理同构，由 renderCheckGrid 渲染，勾选自动触发金币 +1 */
 var HABIT = [
   {k:'大笑10次', e:'😆'}, {k:'对镜微笑', e:'😊'}, {k:'20分钟朗读', e:'📖'},
-  {k:'睡前青蛙趴', e:'🐸'}, {k:'超慢跑30分钟', e:'🏃'}, {k:'敲太溪穴200下', e:'👣'}
+  {k:'睡前青蛙趴', e:'🐸'}, {k:'超慢跑30分钟', e:'🏃'}
 ];
+/* 名称调整后的历史数据迁移：养生内改名 + 习惯养成整项搬进养生（只跑一次，保留旧打卡记录） */
+function migrateHealthNames(){
+  if(state.migHealth2) return;
+  var ren = {'吃西红柿':'番茄+油'};
+  var moved = {'敲太溪穴200下':'太溪穴200'};
+  Object.keys(state.days||{}).forEach(function(k){
+    var d = state.days[k]; if(!d) return;
+    d.health = d.health || {}; d.habit = d.habit || {};
+    Object.keys(ren).forEach(function(o){
+      if(d.health[o] != null){ if(d.health[ren[o]] == null) d.health[ren[o]] = d.health[o]; delete d.health[o]; }
+    });
+    Object.keys(moved).forEach(function(o){
+      if(d.habit[o] != null){ if(d.health[moved[o]] == null) d.health[moved[o]] = d.habit[o]; delete d.habit[o]; }
+    });
+  });
+  state.migHealth2 = true;
+  save();
+}
 function renderCheckGrid(boxId, list, field){
   var day = getDay(curDate);
   var box = el(boxId); if(!box) return; box.innerHTML='';
@@ -2468,15 +2535,132 @@ function monthSum(ym){
   return {inc:inc, exp:exp, bal:inc-exp};
 }
 function yuan(n){ var v = Math.round(n*100)/100; return '¥'+(v%1===0 ? v : v.toFixed(2)); }
+/* 财务板块当前查看的年月：默认跟随顶部日期，补录其它月份时由 finMonth 接管 */
+var finMonth = null;
+function finYM(){ return finMonth || curDate.slice(0,7); }
 function renderFinStats(){
-  var d = new Date(curDate+'T00:00:00');
-  var ym = d.getFullYear()+'-'+pad(d.getMonth()+1);
+  var ym = finYM();
+  finBuildSelects();
   var m = monthSum(ym);
+  var ttl = el('finBoxTtl');
+  if(ttl) ttl.textContent = '📊 '+ym.replace('-',' 年 ')+' 月 · 自动汇总';
   el('mInc').textContent = yuan(m.inc);
   el('mExp').textContent = yuan(m.exp);
   el('mBal').textContent = yuan(m.bal);
   el('mBal').style.color = m.bal>=0 ? '#4E8A66' : 'var(--red)';
 }
+
+/* ---------- 批量补录历史月份 ---------- */
+function finMonthDays(ym){
+  var y = +ym.slice(0,4), m = +ym.slice(5,7);
+  return {y:y, m:m, days:new Date(y, m, 0).getDate()};
+}
+function finBuildSelects(){
+  var ys = el('fbYear'), ms = el('fbMonth');
+  if(!ys || !ms) return;
+  var curY = new Date().getFullYear();
+  var minY = curY - 5, maxY = curY + 1;
+  Object.keys(state.days||{}).forEach(function(k){
+    var y = parseInt(k.slice(0,4), 10);
+    if(!isNaN(y)){ if(y < minY) minY = y; if(y > maxY) maxY = y; }
+  });
+  var ym = finYM();
+  if(ys.dataset.built !== minY+'-'+maxY){
+    ys.innerHTML = '';
+    for(var y=minY; y<=maxY; y++){
+      var o = document.createElement('option'); o.value=String(y); o.textContent=String(y); ys.appendChild(o);
+    }
+    ys.dataset.built = minY+'-'+maxY;
+  }
+  if(!ms.options.length){
+    ms.innerHTML = '';
+    for(var i=1;i<=12;i++){
+      var o2 = document.createElement('option'); o2.value=pad(i); o2.textContent=String(i); ms.appendChild(o2);
+    }
+  }
+  ys.value = ym.slice(0,4); ms.value = ym.slice(5,7);
+}
+/* 该月已有记录的天数（收入或支出有值都算） */
+function finCountDays(ym){
+  var n = 0;
+  finMonthKeys(ym).forEach(function(k){
+    var f = state.days[k] && state.days[k].finance;
+    if(!f) return;
+    if((f.income!=='' && f.income!=null) || (f.expense!=='' && f.expense!=null)) n++;
+  });
+  return n;
+}
+function finOnMonthChanged(){
+  var ys = el('fbYear'), ms = el('fbMonth');
+  if(!ys || !ms || !ys.value || !ms.value) return;
+  finMonth = ys.value + '-' + ms.value;
+  renderFinStats(); renderFinCharts();
+  var tip = el('fbTip');
+  if(tip){
+    tip.classList.remove('ok');
+    var m = monthSum(finMonth), n = finCountDays(finMonth);
+    tip.textContent = finMonth + '：已有 ' + n + ' 天记录（收入 ' + yuan(m.inc) + ' / 支出 ' + yuan(m.exp) + '）。填入会覆盖这些天的数值。';
+  }
+}
+/* 返回该月 1~N 号（当前月只到今天，不写未来）的日期键数组 */
+function finMonthKeys(ym){
+  var d = finMonthDays(ym), out = [], today = todayStr();
+  for(var i=1;i<=d.days;i++){
+    var k = d.y+'-'+pad(d.m)+'-'+pad(i);
+    if(ym === today.slice(0,7) && k > today) break;
+    out.push(k);
+  }
+  return out;
+}
+function finBatchApply(clearMode){
+  var ym = finYM();
+  var keys = finMonthKeys(ym);
+  if(!keys.length){ return; }
+  var incRaw = el('fbInc').value.trim(), expRaw = el('fbExp').value.trim();
+  var inc = incRaw==='' ? null : parseFloat(incRaw);
+  var exp = expRaw==='' ? null : parseFloat(expRaw);
+  if(clearMode){
+    if(!confirm('确定清空 '+ym+' 这 '+keys.length+' 天的收入与支出？该月原有记录会被抹掉。')) return;
+    keys.forEach(function(k){ var d = getDay(k); d.finance = {expense:'', income:''}; });
+  } else {
+    if(inc===null && exp===null){ alert('请至少填写「每日收入」或「每日支出」其中一项。'); return; }
+    if((inc!==null && isNaN(inc)) || (exp!==null && isNaN(exp))){ alert('金额请只填数字。'); return; }
+    var desc = [];
+    if(inc!==null) desc.push('每日收入 ¥'+inc);
+    if(exp!==null) desc.push('每日支出 ¥'+exp);
+    if(!confirm('将把 '+ym+' 的 '+keys[0].slice(8)+'~'+keys[keys.length-1].slice(8)+' 号（共 '+keys.length+' 天）\n'
+      + desc.join('、') + '。\n该月已有记录会被覆盖，确定？')) return;
+    keys.forEach(function(k){
+      var d = getDay(k);
+      d.finance = d.finance || {expense:'', income:''};
+      if(inc!==null) d.finance.income = String(inc);
+      if(exp!==null) d.finance.expense = String(exp);
+    });
+  }
+  save();
+  finMonth = ym;
+  renderFinStats(); renderFinCharts(); renderStats();
+  var tip = el('fbTip');
+  if(tip){
+    tip.textContent = clearMode ? ('已清空 '+ym+' 共 '+keys.length+' 天，统计与趋势图已刷新。')
+                                : ('已写入 '+ym+' 共 '+keys.length+' 天，统计与趋势图已刷新。');
+    tip.classList.add('ok');
+  }
+}
+(function finBatchInit(){
+  var ys = el('fbYear'), ms = el('fbMonth');
+  if(!ys || !ms) return;
+  finBuildSelects();
+  ys.addEventListener('change', finOnMonthChanged);
+  ms.addEventListener('change', finOnMonthChanged);
+  el('fbNow').addEventListener('click', function(){
+    finMonth = null;
+    finBuildSelects(); renderFinStats(); renderFinCharts();
+    var tip = el('fbTip'); if(tip){ tip.classList.remove('ok'); tip.textContent = '已回到当前月（跟随顶部日期）。'; }
+  });
+  el('fbFill').addEventListener('click', function(){ finBatchApply(false); });
+  el('fbClear').addEventListener('click', function(){ finBatchApply(true); });
+})();
 
 /* ================= 7 睡眠 / 8 微光 ================= */
 /* 睡眠输入：实时保存；提交（回车或失焦）后清空输入框回到占位提示词，趋势图同步刷新 */
@@ -2897,8 +3081,9 @@ function finAgg(period){
     return [{v:(t===undefined?null:t), label:curDate.slice(5)}];
   }
   if(period==='m'){
-    /* 月视图：固定当月 1 号~最后一天全部槽位，缺记录的天留空 */
-    var y=+curDate.slice(0,4), m=+curDate.slice(5,7);
+    /* 月视图：固定「财务当前年月」1 号~最后一天全部槽位，缺记录的天留空 */
+    var fy = finYM();
+    var y=+fy.slice(0,4), m=+fy.slice(5,7);
     var days=new Date(y,m,0).getDate();
     for(var i=1;i<=days;i++){
       var k=y+'-'+pad(m)+'-'+pad(i);
@@ -3692,10 +3877,10 @@ function trackCalClose(){ var box = el('trackCal'); if(box) box.classList.remove
       trackCalBuild(); return;
     }
     if(t.getAttribute && t.getAttribute('data-today')){
-      curDate = todayStr(); rollover(curDate); renderAll(); trackCalClose(); return;
+      curDate = todayStr(); finMonth = null; rollover(curDate); renderAll(); trackCalClose(); return;
     }
     var dd = t.getAttribute && t.getAttribute('data-d');
-    if(dd){ curDate = dd; rollover(curDate); renderAll(); trackCalClose(); }
+    if(dd){ curDate = dd; finMonth = null; rollover(curDate); renderAll(); trackCalClose(); }
   });
   document.addEventListener('click', function(e){
     if(box.classList.contains('show') && !box.contains(e.target) && e.target!==btn) trackCalClose();
@@ -4000,12 +4185,13 @@ function shiftDay(n){
   var d = new Date(curDate+'T00:00:00');
   d.setDate(d.getDate()+n);
   curDate = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  finMonth = null;                  /* 换日期后，财务统计回到「跟随当前日期」 */
   rollover(curDate);
   renderAll();
 }
 el('prevDay').addEventListener('click', function(){ shiftDay(-1); });
 el('nextDay').addEventListener('click', function(){ shiftDay(1); });
-el('goToday').addEventListener('click', function(){ curDate=todayStr(); rollover(curDate); renderAll(); });
+el('goToday').addEventListener('click', function(){ curDate=todayStr(); finMonth=null; rollover(curDate); renderAll(); });
 el('lightbox').addEventListener('click', function(){ this.classList.remove('show'); });
 
 /* ================= 倒计时 ================= */
@@ -4895,7 +5081,24 @@ function memoInit(){
 /* ================= 启动 ================= */
 function setJarPlaceholder(){ var inp=document.getElementById('jarInput'); if(inp){ inp.placeholder = (window.innerWidth<=760)?'记一个小目标，攒金珠子啦~':'完成小小目标，攒金珠子啦~~~'; } }
 setJarPlaceholder(); window.addEventListener('resize', setJarPlaceholder);
+/* 视觉视口高度 → CSS 变量 --vvh（软键盘弹出时可视高度会变小，供底部吸附 / 编辑区锁高使用） */
+(function vvhInit(){
+  var vv = window.visualViewport; if(!vv) return;
+  function set(){ try{ document.documentElement.style.setProperty('--vvh', vv.height+'px'); }catch(e){} }
+  vv.addEventListener('resize', set);
+  vv.addEventListener('scroll', set);
+  set();
+})();
+/* 待办清单：聚焦输入框时给卡片加 .kb，让它缩到可视高度，保证底部输入栏不被软键盘盖住 */
+(function todoKbFix(){
+  var inp = document.getElementById('todoInput');
+  var card = document.querySelector('.card[data-sec="todo"]');
+  if(!inp || !card) return;
+  inp.addEventListener('focus', function(){ card.classList.add('kb'); });
+  inp.addEventListener('blur', function(){ card.classList.remove('kb'); });
+})();
 load();
+migrateHealthNames();
 memoInit();
 requestPersistentStorage();
 /* 启动即渲染：无论 IndexedDB 是否可用都要把本地历史数据完整画出来。
