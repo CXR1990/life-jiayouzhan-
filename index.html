@@ -328,6 +328,37 @@
   .checkcell.on .fbox{ background:linear-gradient(135deg,#A8D4B4,#8FBF9F); border-color:transparent; }
   .checkcell.on .fbox::after{ content:"✓"; }
   .checkcell.skin.on .fbox{ background:linear-gradient(135deg,#F0AEC2,#E89AB0); }
+  /* 板块右上角：新增打卡任务加号按钮（柔和浅棕圆角） */
+  .sec-add{ margin-left:auto; width:30px; height:30px; border-radius:50%; border:none; flex:none;
+    background:#F1E2CC; color:#B07A44; font-size:19px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(224,150,88,.20);
+    -webkit-tap-highlight-color:transparent; user-select:none; transition:transform .12s, background .12s; }
+  .sec-add:active{ transform:scale(.9); background:#E7D2B2; }
+  .sec-add:hover{ background:#EBD9BE; }
+  /* 打卡卡片长按操作菜单 */
+  #cellMenu{ position:fixed; z-index:130; background:#fff; border-radius:14px; padding:6px;
+    box-shadow:0 10px 34px rgba(60,50,40,.22); display:none; min-width:128px; }
+  #cellMenu.show{ display:block; }
+  #cellMenu .mi{ padding:9px 16px; border-radius:10px; font-size:13px; cursor:pointer; user-select:none;
+    display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  #cellMenu .mi:hover{ background:#FBF4EA; }
+  #cellMenu .msep{ border-top:1px dashed var(--line); margin:4px 6px; }
+  /* 新增 / 编辑 打卡任务弹窗 */
+  .tm-mask{ position:fixed; inset:0; background:rgba(60,50,40,.45); display:none; align-items:center; justify-content:center;
+    z-index:140; padding:20px; }
+  .tm-mask.show{ display:flex; }
+  .tm-modal{ background:#fff; border-radius:18px; padding:18px; width:100%; max-width:320px;
+    box-shadow:0 16px 50px rgba(60,50,40,.30); }
+  .tm-ttl{ font-size:16px; font-weight:800; color:#C77822; margin-bottom:14px;
+    font-family:"Yuanti SC","YouYuan","幼圆","PingFang SC","Microsoft YaHei",sans-serif; }
+  .tm-lab{ display:block; font-size:12px; color:var(--sub); margin:10px 0 5px; }
+  .emoji-pick{ display:flex; flex-wrap:wrap; gap:6px; }
+  .emoji-pick span{ width:38px; height:38px; border-radius:10px; background:#FBF4EA; display:flex; align-items:center;
+    justify-content:center; font-size:20px; cursor:pointer; border:2px solid transparent; transition:.12s; }
+  .emoji-pick span.on{ border-color:var(--accent); background:#FFF3E6; }
+  .emoji-pick span:active{ transform:scale(.9); }
+  .tm-acts{ display:flex; gap:10px; margin-top:18px; }
+  .tm-acts .btn{ flex:1; }
 
   /* ===== 6 财务 ===== */
   .finrow{ display:flex; gap:10px; margin-bottom:22px; }
@@ -1440,6 +1471,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     <div class="sec-head" data-page-node-id="bTumLilgB5XoSv7L2Ohi8z">
       <div class="sec-ico" style="background:var(--mint-soft);" data-page-node-id="MoYHYbVaZ7VgQi4bTevDFC">☯</div>
       <h2 data-page-node-id="GZYZcVankUTv0dKu0EArUp">每日养生</h2>
+      <button type="button" class="sec-add" data-secadd="health" aria-label="新增打卡任务">＋</button>
     </div>
     <div class="grid" id="healthGrid" data-page-node-id="NEPAWvf3oXnnvb59sw6QpX"></div>
   </div>
@@ -1450,6 +1482,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     <div class="sec-head" data-page-node-id="4nhXApiH2U8GQ93Z69lb9y">
       <div class="sec-ico" style="background:var(--pink-soft);" data-page-node-id="3yu3njE0htsxmhta9QcZAe">🧴</div>
       <h2 data-page-node-id="4CDN4RNv7GhahEQJvAOS2h">肌肤护理</h2>
+      <button type="button" class="sec-add" data-secadd="skin" aria-label="新增打卡任务">＋</button>
     </div>
     <div class="grid skin" id="skinGrid" data-page-node-id="0vFzPcguU4nBlz3bNGm9HI"></div>
   </div>
@@ -1459,6 +1492,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     <div class="sec-head">
       <div class="sec-ico" style="background:#DFF0EA;">🌈</div>
       <h2>习惯养成</h2>
+      <button type="button" class="sec-add" data-secadd="habit" aria-label="新增打卡任务">＋</button>
     </div>
     <div class="grid" id="habitGrid"></div>
   </div>
@@ -1473,7 +1507,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="f" data-page-node-id="PrfGlNsLXDSSEAl7Ilc1Ar"><label data-page-node-id="hK3kvTWwI7y5T4oy5qWcMI">今日总支出（元）</label><input type="number" id="finExp" min="0" step="0.01" placeholder="只填数字" data-page-node-id="erW6NeSMsZAW9GIPSauZH3"></div>
       <div class="f" data-page-node-id="2fkqukBUywmAX2Ff3q16az"><label data-page-node-id="edhLLB2DOIjlNyw8KqHXBB">今日总收入（元）</label><input type="number" id="finInc" min="0" step="0.01" placeholder="只填数字" data-page-node-id="q6iaCgn5NgxYVgDh2oHTWP"></div>
     </div>
-    <!-- 批量补录历史月份 -->
+    <div class="finbox" data-page-node-id="KsawVkfumCIXZ17to0iNHI">
+      <div class="ttl" id="finBoxTtl" data-page-node-id="A52DCuPjc9HDXA1I0HMpyC">📊 本月统计（自动汇总）</div>
+      <div class="row" data-page-node-id="zJjOIDdHsa7M0bqrHbf13F"><span class="k" data-page-node-id="oJE1JqnsjNZjQrIBHmLKxR">本月总收入</span><span id="mInc" data-page-node-id="BtwFwlW7HHZKc8JOD8ORtX">¥0</span></div>
+      <div class="row" data-page-node-id="RnaKHsbAuyJvx7qAj5AxBR"><span class="k" data-page-node-id="pnobWvHPN9VxdGUM7mzn8F">本月总支出</span><span id="mExp" data-page-node-id="sHuvnBva3Fx1iqdwmzcE2m">¥0</span></div>
+      <div class="row big" data-page-node-id="oKcExln6tefLB7bYcceD9z"><span class="k" data-page-node-id="8B2f5BBzXhAvE8jvLuK7HE">本月结余</span><span id="mBal" data-page-node-id="k8bQstUEeddZRrKMP2mmka">¥0</span></div>
+    </div>
+    <div class="fincharts" id="finCharts"></div>
+    <!-- 批量补录历史月份（置于财务卡片最底部） -->
     <div class="finbatch">
       <div class="fb-ttl">📥 批量补录历史月份</div>
       <div class="fb-line">
@@ -1482,7 +1523,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         <span class="fb-unit">年</span>
         <select id="fbMonth" class="fb-sel"></select>
         <span class="fb-unit">月</span>
-        <button class="btn small ghost" id="fbNow" type="button">回到当前月</button>
       </div>
       <div class="fb-row">
         <div class="f"><label>每日收入（元）</label><input type="number" id="fbInc" min="0" step="0.01" placeholder="留空表示不改"></div>
@@ -1494,13 +1534,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       </div>
       <div class="fb-tip" id="fbTip">选好年月 → 填每日收入 / 支出 → 点「批量填入整月」，下方统计与趋势图会自动更新。</div>
     </div>
-    <div class="finbox" data-page-node-id="KsawVkfumCIXZ17to0iNHI">
-      <div class="ttl" id="finBoxTtl" data-page-node-id="A52DCuPjc9HDXA1I0HMpyC">📊 本月统计（自动汇总）</div>
-      <div class="row" data-page-node-id="zJjOIDdHsa7M0bqrHbf13F"><span class="k" data-page-node-id="oJE1JqnsjNZjQrIBHmLKxR">本月总收入</span><span id="mInc" data-page-node-id="BtwFwlW7HHZKc8JOD8ORtX">¥0</span></div>
-      <div class="row" data-page-node-id="RnaKHsbAuyJvx7qAj5AxBR"><span class="k" data-page-node-id="pnobWvHPN9VxdGUM7mzn8F">本月总支出</span><span id="mExp" data-page-node-id="sHuvnBva3Fx1iqdwmzcE2m">¥0</span></div>
-      <div class="row big" data-page-node-id="oKcExln6tefLB7bYcceD9z"><span class="k" data-page-node-id="8B2f5BBzXhAvE8jvLuK7HE">本月结余</span><span id="mBal" data-page-node-id="k8bQstUEeddZRrKMP2mmka">¥0</span></div>
-    </div>
-    <div class="fincharts" id="finCharts"></div>
   </div>
 
   <!-- 7 睡眠记录 -->
@@ -1785,6 +1818,29 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </div>
 <!-- 右键优先级菜单 -->
 <div id="priMenu"></div>
+<!-- 打卡任务：长按操作菜单 -->
+<div id="cellMenu">
+  <div class="mi" data-act="edit">✏️ 编辑</div>
+  <div class="mi" data-act="del">🗑️ 删除</div>
+  <div class="msep"></div>
+  <div class="mi" data-act="up">⬆️ 上移</div>
+  <div class="mi" data-act="down">⬇️ 下移</div>
+</div>
+<!-- 新增 / 编辑 打卡任务弹窗 -->
+<div class="tm-mask" id="taskModalMask">
+  <div class="tm-modal">
+    <div class="tm-ttl" id="taskModalTitle">新增打卡任务</div>
+    <label class="tm-lab">任务名称</label>
+    <input type="text" id="taskName" maxlength="14" placeholder="例如：喝一杯温水">
+    <label class="tm-lab">图标</label>
+    <div class="emoji-pick" id="emojiPick"></div>
+    <input type="hidden" id="taskEmoji" value="✨">
+    <div class="tm-acts">
+      <button class="btn small ghost" id="taskCancel" type="button">取消</button>
+      <button class="btn small" id="taskSave" type="button">保存</button>
+    </div>
+  </div>
+</div>
 
 <!-- 历史回顾子页面 -->
 <div id="histPage">
@@ -2497,15 +2553,38 @@ function migrateHealthNames(){
   state.migHealth2 = true;
   save();
 }
-function renderCheckGrid(boxId, list, field){
+function secList(field){
+  var key = field + 'List';
+  if(!Array.isArray(state[key])){
+    var base = field==='health' ? HEALTH : field==='skin' ? SKIN : HABIT;
+    state[key] = base.map(function(x){ return {k:x.k, e:x.e}; });
+  }
+  return state[key];
+}
+function boxFor(field){ return field==='health' ? 'healthGrid' : field==='skin' ? 'skinGrid' : 'habitGrid'; }
+function renderCheckGrid(boxId, field){
   var day = getDay(curDate);
   var box = el(boxId); if(!box) return; box.innerHTML='';
   var rec = day[field] || (day[field] = {});
+  var list = secList(field);
   list.forEach(function(it){
     var d = document.createElement('div');
     d.className = 'checkcell'+(field==='skin'?' skin':'')+(rec[it.k]?' on':'');
     d.innerHTML = '<span class="fbox"></span><span class="emo">'+(it.svg||it.e)+'</span><span>'+esc(it.k)+'</span>';
+    var lpTimer=null, lpFired=false;
+    function startLP(){ lpFired=false; if(lpTimer) clearTimeout(lpTimer); lpTimer=setTimeout(function(){ lpFired=true; openCellMenu(field, it.k, d); }, 480); }
+    function cancelLP(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } }
+    d.addEventListener('touchstart', startLP, {passive:true});
+    d.addEventListener('touchend', cancelLP);
+    d.addEventListener('touchmove', cancelLP);
+    d.addEventListener('touchcancel', cancelLP);
+    d.addEventListener('mousedown', function(e){ if(e.button!==0) return; startLP(); });
+    d.addEventListener('mouseup', cancelLP);
+    d.addEventListener('mouseleave', cancelLP);
+    d.addEventListener('contextmenu', function(e){ e.preventDefault(); });
     d.addEventListener('click', function(){
+      closeCellMenu();
+      if(lpFired){ lpFired=false; return; }
       var dd = getDay(curDate);
       dd[field] = dd[field] || {};
       dd[field][it.k] = !dd[field][it.k];
@@ -2516,6 +2595,106 @@ function renderCheckGrid(boxId, list, field){
     box.appendChild(d);
   });
 }
+/* ===== 打卡任务：长按菜单 + 新增 / 编辑弹窗 ===== */
+var cellMenuTarget = null;
+function openCellMenu(field, k, cellEl){
+  cellMenuTarget = {field:field, k:k};
+  var menu = el('cellMenu'); if(!menu) return;
+  menu.classList.add('show');
+  var r = cellEl.getBoundingClientRect();
+  var mw = menu.offsetWidth, mh = menu.offsetHeight;
+  var left = r.right + 6;
+  if(left + mw > window.innerWidth - 8) left = Math.max(8, r.left - mw - 6);
+  var top = r.top;
+  if(top + mh > window.innerHeight - 8) top = Math.max(8, window.innerHeight - mh - 8);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+}
+function closeCellMenu(){ var m=el('cellMenu'); if(m) m.classList.remove('show'); }
+var EMOJIS = ['✨','🌿','💧','🔥','🌞','🌙','🍎','🥦','💪','🏃','🧘','📖','🎯','💡','🌸','⭐','🐱','🍵','🦶','💆','🪥','🧴','💊','🥛','🌰','🍅','🥚','🫧'];
+function buildEmojiPick(){
+  var box = el('emojiPick'); if(!box) return;
+  box.innerHTML='';
+  EMOJIS.forEach(function(em){
+    var s=document.createElement('span'); s.textContent=em; s.setAttribute('data-em',em);
+    s.addEventListener('click', function(){ selectEmoji(em); });
+    box.appendChild(s);
+  });
+}
+function selectEmoji(em){
+  var box=el('emojiPick'); if(!box) return;
+  Array.prototype.forEach.call(box.children, function(c){ c.classList.toggle('on', c.getAttribute('data-em')===em); });
+  el('taskEmoji').value = em;
+}
+var taskModalMode='add', taskModalField='health', taskEditKey=null;
+function openTaskModal(mode, field, k){
+  taskModalMode=mode; taskModalField=field; taskEditKey=k||null;
+  el('taskModalTitle').textContent = mode==='edit' ? '编辑打卡任务' : '新增打卡任务';
+  el('taskName').value = mode==='edit' ? k : '';
+  var cur = '✨';
+  if(mode==='edit'){ var l=secList(field); for(var i=0;i<l.length;i++){ if(l[i].k===k){ cur=l[i].e; break; } } }
+  selectEmoji(cur);
+  el('taskModalMask').classList.add('show');
+  setTimeout(function(){ el('taskName').focus(); }, 60);
+}
+function closeTaskModal(){ var m=el('taskModalMask'); if(m) m.classList.remove('show'); }
+function saveTask(){
+  var name = (el('taskName').value||'').trim();
+  var em = el('taskEmoji').value || '✨';
+  if(!name){ el('taskName').focus(); return; }
+  var list = secList(taskModalField);
+  if(taskModalMode==='add'){
+    var dup=false; list.forEach(function(it){ if(it.k===name) dup=true; });
+    if(dup){ if(window.alert) alert('已存在同名任务：「'+name+'」'); return; }
+    list.push({k:name, e:em});
+  } else {
+    var idx=-1; for(var i=0;i<list.length;i++){ if(list[i].k===taskEditKey){ idx=i; break; } }
+    if(idx<0){ closeTaskModal(); return; }
+    if(name!==taskEditKey){
+      Object.keys(state.days||{}).forEach(function(dk){
+        var d=state.days[dk]; if(!d) return;
+        d[taskModalField]=d[taskModalField]||{};
+        if(d[taskModalField][taskEditKey]!=null){ if(d[taskModalField][name]==null) d[taskModalField][name]=d[taskModalField][taskEditKey]; delete d[taskModalField][taskEditKey]; }
+      });
+    }
+    list[idx].k=name; list[idx].e=em;
+  }
+  save(); closeTaskModal(); renderCheckGrid(boxFor(taskModalField), taskModalField);
+}
+(function bindTaskUI(){
+  buildEmojiPick();
+  Array.prototype.forEach.call(document.querySelectorAll('.sec-add'), function(btn){
+    btn.addEventListener('click', function(){ openTaskModal('add', btn.getAttribute('data-secadd')); });
+  });
+  var sm=el('taskSave'); if(sm) sm.addEventListener('click', saveTask);
+  var cx=el('taskCancel'); if(cx) cx.addEventListener('click', closeTaskModal);
+  var mk=el('taskModalMask'); if(mk) mk.addEventListener('click', function(e){ if(e.target===this) closeTaskModal(); });
+  var tn=el('taskName'); if(tn) tn.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); saveTask(); } });
+  var cm=el('cellMenu');
+  if(cm) cm.addEventListener('click', function(e){
+    var mi=e.target.closest ? e.target.closest('.mi') : null; if(!mi) return;
+    var act=mi.getAttribute('data-act'); closeCellMenu();
+    if(!cellMenuTarget) return;
+    var field=cellMenuTarget.field, k=cellMenuTarget.k;
+    var list=secList(field); var idx=-1;
+    for(var i=0;i<list.length;i++){ if(list[i].k===k){ idx=i; break; } }
+    if(idx<0) return;
+    if(act==='edit'){ openTaskModal('edit', field, k); }
+    else if(act==='del'){ if(window.confirm && !confirm('确定删除「'+k+'」这个打卡任务吗？')) return; list.splice(idx,1); save(); renderCheckGrid(boxFor(field), field); }
+    else if(act==='up'){ if(idx<=0) return; var t=list[idx-1]; list[idx-1]=list[idx]; list[idx]=t; save(); renderCheckGrid(boxFor(field), field); }
+    else if(act==='down'){ if(idx>=list.length-1) return; var t2=list[idx+1]; list[idx+1]=list[idx]; list[idx]=t2; save(); renderCheckGrid(boxFor(field), field); }
+  });
+  function outside(e){
+    var m=el('cellMenu'); if(!m || !m.classList.contains('show')) return;
+    if(m.contains(e.target)) return;
+    var cc=e.target.closest ? e.target.closest('.checkcell') : null;
+    if(cc) return;
+    closeCellMenu();
+  }
+  document.addEventListener('mousedown', outside);
+  document.addEventListener('touchstart', outside, {passive:true});
+  window.addEventListener('scroll', function(){ closeCellMenu(); }, true);
+})();
 
 /* ================= 6 财务 ================= */
 function bindFin(id, field){
@@ -2653,11 +2832,6 @@ function finBatchApply(clearMode){
   finBuildSelects();
   ys.addEventListener('change', finOnMonthChanged);
   ms.addEventListener('change', finOnMonthChanged);
-  el('fbNow').addEventListener('click', function(){
-    finMonth = null;
-    finBuildSelects(); renderFinStats(); renderFinCharts();
-    var tip = el('fbTip'); if(tip){ tip.classList.remove('ok'); tip.textContent = '已回到当前月（跟随顶部日期）。'; }
-  });
   el('fbFill').addEventListener('click', function(){ finBatchApply(false); });
   el('fbClear').addEventListener('click', function(){ finBatchApply(true); });
 })();
@@ -2979,13 +3153,13 @@ function renderStats(){
   function gridCnt(ks, field, name){
     return ks.filter(function(k){ return state.days[k][field] && state.days[k][field][name]; }).length;
   }
-  var hlt = HEALTH.map(function(it){ return [it.k, gridCnt(keys,'health',it.k), '次', gridCnt(pkeys,'health',it.k)]; });
+  var hlt = secList('health').map(function(it){ return [it.k, gridCnt(keys,'health',it.k), '次', gridCnt(pkeys,'health',it.k)]; });
   html += stGroup('mint','☯ 每日养生（打卡次数）', hlt);
   /* 护肤各项目（本月 vs 上月） */
-  var skn = SKIN.map(function(it){ return [it.k, gridCnt(keys,'skin',it.k), '次', gridCnt(pkeys,'skin',it.k)]; });
+  var skn = secList('skin').map(function(it){ return [it.k, gridCnt(keys,'skin',it.k), '次', gridCnt(pkeys,'skin',it.k)]; });
   html += stGroup('pink','🧴 肌肤护理（打卡次数）', skn);
   /* 习惯养成各项目（本月 vs 上月） */
-  var hbt = HABIT.map(function(it){ return [it.k, gridCnt(keys,'habit',it.k), '次', gridCnt(pkeys,'habit',it.k)]; });
+  var hbt = secList('habit').map(function(it){ return [it.k, gridCnt(keys,'habit',it.k), '次', gridCnt(pkeys,'habit',it.k)]; });
   html += stGroup('lav','🌈 习惯养成（打卡次数）', hbt);
   el('statsBody').innerHTML = html;
 }
@@ -4231,7 +4405,7 @@ function renderAll(){
   });
 
   safeRender(function(){ renderTodos(); renderParts(); });
-  safeRender(function(){ renderCheckGrid('healthGrid', HEALTH, 'health'); renderCheckGrid('skinGrid', SKIN, 'skin'); renderCheckGrid('habitGrid', HABIT, 'habit'); });
+  safeRender(function(){ renderCheckGrid('healthGrid', 'health'); renderCheckGrid('skinGrid', 'skin'); renderCheckGrid('habitGrid', 'habit'); });
   safeRender(function(){ renderFinStats(); renderFinCharts(); renderNotes(); renderPocket(); });
   safeRender(function(){ renderEngStats(); renderStats(); renderSleepCharts(); renderJar(); renderTrack(); renderPeriod(); renderGrowth(); });
   safeRender(renderMemos);
