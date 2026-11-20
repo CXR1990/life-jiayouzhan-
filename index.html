@@ -2768,7 +2768,20 @@ function buildLinkCard(v, pi){
     + '<div class="lrow"><span class="licon">'+v.pfN+' · 点封面跳转</span><button class="cover-pick">📷 封面</button><button class="del vdel" title="删除链接">×</button></div>'
     + '<div class="vminrow"><span>练习</span><input type="number" class="vmin" min="0" step="1" placeholder="分钟" value="'+esc(v.min||'')+'"><span>分钟</span></div>'
     + '</div>';
-  var openU = function(){ window.open(v.url, '_blank', 'noopener'); };
+  var openU = function(){
+    var u = String(v.url||'');
+    if(!/^https?:\/\//i.test(u)){
+      var m = u.match(/https?:\/\/[^\s"'<>）】]+/i);
+      if(m){ u = m[0]; v.url = u; save(); }
+    }
+    if(!/^https?:\/\/[^\s]+\.[^\s]+/i.test(u)){
+      alert('这条链接的网址无效，请点卡片右上角 × 删除后重新添加。\n原内容：'+(u||'（空）').slice(0,60));
+      return;
+    }
+    var a = document.createElement('a');
+    a.href = u; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
   d.querySelector('.lcover').addEventListener('click', openU);
   d.querySelector('.vname').addEventListener('click', openU);
   var minInput = d.querySelector('.vmin');
