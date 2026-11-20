@@ -329,6 +329,20 @@
   .video-item .vname{ font-size:13px; color:var(--ink); flex:1; word-break:break-all; }
   .video-item .feelrow{ display:flex; gap:8px; align-items:center; }
   .video-item .feelrow input{ font-size:12px; padding:6px 10px; }
+  .gbtnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+  .video-item.linkitem{ display:flex; gap:10px; }
+  .lcover{ position:relative; width:116px; flex:0 0 auto; border-radius:10px; overflow:hidden; background:linear-gradient(135deg,#F5EBDA,#EADFC6); min-height:76px; cursor:pointer; }
+  .lcover img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .lcover .lph{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:30px; }
+  .lcover .lph span{ font-size:10px; color:var(--sub); max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lcover .lpf{ position:absolute; left:5px; bottom:5px; font-size:10px; background:rgba(255,255,255,.92); border-radius:8px; padding:2px 7px; color:var(--ink); }
+  .lbody{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .lbody .vname{ cursor:pointer; font-weight:bold; }
+  .lbody .lrow{ display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .lbody .licon{ font-size:11px; background:#F1EFE6; border-radius:8px; padding:3px 8px; color:var(--sub); white-space:nowrap; }
+  .lbody .cover-pick{ font-size:11px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:3px 8px; color:var(--sub); cursor:pointer; }
+  .lbody .vminrow{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--sub); }
+  .lbody .vminrow input{ width:64px; font-size:12px; padding:5px 8px; }
 
   /* ===== 4/5 打卡宫格 ===== */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
@@ -1936,6 +1950,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   </div>
 </div>
 
+<!-- 添加跟练链接弹窗 -->
+<div class="tm-mask" id="linkModalMask">
+  <div class="tm-modal">
+    <div class="tm-ttl">🔗 添加跟练链接</div>
+    <label class="tm-lab">视频链接</label>
+    <input type="text" id="linkUrl" placeholder="粘贴 B站 / 抖音 / 小红书 / YouTube 等链接">
+    <label class="tm-lab">备注名称（可留空）</label>
+    <input type="text" id="linkName" maxlength="24" placeholder="例如：帕梅拉10分钟瘦腿">
+    <div style="font-size:12px; color:var(--sub); line-height:1.6; margin-top:4px;">💡 B站长链接（含BV号）和 YouTube 会自动抓取封面；抖音、小红书等暂不支持自动抓取，保存后点卡片上的 📷 从相册选张截图当封面。</div>
+    <div class="tm-acts">
+      <button class="btn small ghost" id="linkCancel" type="button">取消</button>
+      <button class="btn small" id="linkSave" type="button">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 金币月度明细 下半屏弹窗 -->
 <div class="coin-mask" id="coinMask">
   <div class="coin-sheet" id="coinSheet">
@@ -2622,7 +2652,7 @@ function renderGym(){
       + (done?'<span class="gdone">今日已练 ✓</span>':'')
       + '</div>'
       + '<div class="gfeelrow"><input type="text" class="gfeel" placeholder="今天练完的感受…（酸/累/很爽）" value="'+esc(day.fitness.feel[p.k]||'')+'"></div>'
-      + '<button class="btn small ghost gup">＋ 上传该部位视频</button>'
+      + '<div class="gbtnrow"><button class="btn small ghost gup">＋ 上传视频</button><button class="btn small ghost glink">🔗 添加跟练链接</button></div>'
       + '<input type="file" accept="video/*" multiple style="display:none;">'
       + '<div class="gvids"></div>';
     var chk = sec.querySelector('.gchk');
@@ -2639,6 +2669,7 @@ function renderGym(){
     });
     var fInput = sec.querySelector('input[type=file]');
     sec.querySelector('.gup').addEventListener('click', function(){ fInput.click(); });
+    sec.querySelector('.glink').addEventListener('click', function(){ openLinkModal(p.k); });
     fInput.addEventListener('change', function(){
       var files = Array.prototype.slice.call(this.files);
       this.value='';
@@ -2652,10 +2683,13 @@ function renderGym(){
       });
     });
     var vBox = sec.querySelector('.gvids');
+    var vlinks = vids.filter(function(v){ return v.type==='link'; });
+    var vlocal = vids.filter(function(v){ return v.type!=='link'; });
+    vlinks.forEach(function(v){ vBox.appendChild(buildLinkCard(v, pi)); });
     if(!vids.length){
-      vBox.innerHTML = '<div class="empty">还没有视频，点上方按钮上传后在这里跟练</div>';
+      vBox.innerHTML = '<div class="empty">还没有内容，可上传视频或添加跟练链接</div>';
     } else {
-      vids.forEach(function(v){
+      vlocal.forEach(function(v){
         mediaURL(v.id).then(function(u){
           if(!u) return;
           var d = document.createElement('div');
@@ -2707,6 +2741,127 @@ function renderGym(){
       });
     });
     box.appendChild(osec);
+  }
+}
+
+/* 跟练角：链接卡片渲染（点封面/标题跳转平台播放） */
+function buildLinkCard(v, pi){
+  var d = document.createElement('div');
+  d.className='video-item linkitem';
+  var coverHtml = v.coverData ? '<img src="'+v.coverData+'" alt="">'
+    : (v.cover ? '<img src="'+esc(v.cover)+'" alt="" onerror="this.style.display=\'none\'">'
+    : '<div class="lph">'+v.pfE+'<span>'+esc(v.name||'未命名')+'</span></div>');
+  d.innerHTML = '<div class="lcover" title="点击跳转播放">'+coverHtml+'<span class="lpf">'+v.pfN+'</span></div>'
+    + '<div class="lbody">'
+    + '<div class="vname">'+esc(v.name||'未命名跟练')+'</div>'
+    + '<div class="lrow"><span class="licon">'+v.pfN+' · 点封面跳转</span><button class="cover-pick">📷 封面</button><button class="del vdel" title="删除链接">×</button></div>'
+    + '<div class="vminrow"><span>练习</span><input type="number" class="vmin" min="0" step="1" placeholder="分钟" value="'+esc(v.min||'')+'"><span>分钟</span></div>'
+    + '</div>';
+  var openU = function(){ window.open(v.url, '_blank', 'noopener'); };
+  d.querySelector('.lcover').addEventListener('click', openU);
+  d.querySelector('.vname').addEventListener('click', openU);
+  var minInput = d.querySelector('.vmin');
+  minInput.addEventListener('input', function(){
+    v.min = minInput.value; save();
+    var gt = el('gmin-'+pi); if(gt) gt.textContent = '累计 '+partMinTotal(v.part)+' 分钟';
+  });
+  d.querySelector('.vdel').addEventListener('click', function(){
+    if(!confirm('删除跟练链接「'+(v.name||v.url)+'」？')) return;
+    state.videos = state.videos.filter(function(x){ return x.id!==v.id; });
+    save(); renderGym();
+  });
+  /* 自选封面：从相册选图，压成小图存 localStorage */
+  var cInput = document.createElement('input');
+  cInput.type='file'; cInput.accept='image/*'; cInput.style.display='none';
+  d.appendChild(cInput);
+  d.querySelector('.cover-pick').addEventListener('click', function(){ cInput.click(); });
+  cInput.addEventListener('change', function(){
+    var f = this.files && this.files[0]; this.value='';
+    if(!f) return;
+    var img = new Image();
+    var reader = new FileReader();
+    reader.onload = function(){
+      img.onload = function(){
+        var W = 480, H = Math.round(img.height * Math.min(1, W/img.width));
+        var cv = document.createElement('canvas'); cv.width=W; cv.height=H;
+        cv.getContext('2d').drawImage(img, 0, 0, W, H);
+        try{
+          v.coverData = cv.toDataURL('image/jpeg', 0.78); v.cover='';
+          save(); renderGym();
+        }catch(e){ alert('这张图处理失败了，换一张试试'); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(f);
+  });
+  return d;
+}
+
+/* 跟练角：添加链接弹窗 + 平台识别 + 封面抓取 */
+var linkPart = null;
+function openLinkModal(part){
+  linkPart = part;
+  el('linkUrl').value=''; el('linkName').value='';
+  el('linkModalMask').classList.add('show');
+  setTimeout(function(){ el('linkUrl').focus(); }, 120);
+}
+function closeLinkModal(){ el('linkModalMask').classList.remove('show'); }
+el('linkCancel').addEventListener('click', closeLinkModal);
+el('linkModalMask').addEventListener('click', function(e){ if(e.target===this) closeLinkModal(); });
+el('linkSave').addEventListener('click', function(){
+  var url = el('linkUrl').value.trim();
+  if(!url){ el('linkUrl').focus(); return; }
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  var pf = detectPlatform(url);
+  var entry = { id:'lnk_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+    type:'link', url:url, name:el('linkName').value.trim(), part:linkPart,
+    pfE:pf.e, pfN:pf.n, cover:'', coverData:'', min:'', addedAt:Date.now() };
+  state.videos.push(entry);
+  save(); closeLinkModal(); renderGym();
+  fetchLinkCover(entry);
+});
+function detectPlatform(url){
+  var u = url.toLowerCase();
+  if(u.indexOf('bilibili.com')>-1 || u.indexOf('b23.tv')>-1) return {e:'📺', n:'B站'};
+  if(u.indexOf('youtube.com')>-1 || u.indexOf('youtu.be')>-1) return {e:'▶️', n:'YouTube'};
+  if(u.indexOf('douyin')>-1 || u.indexOf('iesdouyin')>-1) return {e:'🎵', n:'抖音'};
+  if(u.indexOf('kuaishou')>-1) return {e:'🎬', n:'快手'};
+  if(u.indexOf('xiaohongshu')>-1 || u.indexOf('xhslink')>-1) return {e:'📕', n:'小红书'};
+  return {e:'🔗', n:'视频链接'};
+}
+function fetchLinkCover(v){
+  /* B站（长链接含 BV 号）：JSONP 拿标题 + 封面 */
+  var bv = v.url.match(/BV[0-9A-Za-z]{10}/);
+  if(bv){
+    var cbN = 'biliCb_'+Date.now(), done = false;
+    var s = document.createElement('script');
+    var finish = function(pic, title){
+      if(done) return; done = true;
+      try{ delete window[cbN]; }catch(e){ window[cbN] = undefined; }
+      if(s.parentNode) s.parentNode.removeChild(s);
+      if(pic){
+        v.cover = pic;
+        if(!v.name && title) v.name = String(title).replace(/【[^】]*】/g,'').slice(0,24) || String(title).slice(0,24);
+        save(); renderGym();
+      }
+    };
+    window[cbN] = function(res){
+      try{
+        if(res && res.code===0 && res.data && res.data.pic) finish(res.data.pic, res.data.title);
+        else finish(null);
+      }catch(e){ finish(null); }
+    };
+    s.onerror = function(){ finish(null); };
+    s.src = 'https://api.bilibili.com/x/web-interface/view?bvid='+bv[0]+'&jsonp=jsonp&callback='+cbN;
+    document.body.appendChild(s);
+    setTimeout(function(){ finish(null); }, 8000);
+    return;
+  }
+  /* YouTube：缩略图有固定地址，直接拼 */
+  var ym = v.url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([0-9A-Za-z_-]{11})/);
+  if(ym){
+    v.cover = 'https://i.ytimg.com/vi/'+ym[1]+'/hqdefault.jpg';
+    save(); renderGym();
   }
 }
 
