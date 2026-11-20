@@ -1955,7 +1955,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   <div class="tm-modal">
     <div class="tm-ttl">🔗 添加跟练链接</div>
     <label class="tm-lab">视频链接</label>
-    <input type="text" id="linkUrl" placeholder="粘贴 B站 / 抖音 / 小红书 / YouTube 等链接">
+    <input type="text" id="linkUrl" placeholder="粘贴链接或整段分享文案，自动提取网址">
     <label class="tm-lab">备注名称（可留空）</label>
     <input type="text" id="linkName" maxlength="24" placeholder="例如：帕梅拉10分钟瘦腿">
     <div style="font-size:12px; color:var(--sub); line-height:1.6; margin-top:4px;">💡 B站长链接（含BV号）和 YouTube 会自动抓取封面；抖音、小红书等暂不支持自动抓取，保存后点卡片上的 📷 从相册选张截图当封面。</div>
@@ -2049,7 +2049,18 @@ function save(){
 function load(){
   try{
     var raw = localStorage.getItem(STORE_KEY);
-    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; state.wishes=state.wishes||[]; } }
+    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; state.wishes=state.wishes||[];
+      /* 修复旧版误存整段分享文案的链接：提取其中的真实网址 */
+      var fixed=false;
+      state.videos.forEach(function(v){
+        if(v && v.type==='link' && v.url && (/\s/.test(v.url) || !/^https?:\/\//i.test(v.url))){
+          var mm = v.url.match(/https?:\/\/[^\s"'<>）】]+/i);
+          if(mm){ v.url = mm[0]; fixed=true; }
+          else if(!/\s/.test(v.url) && v.url.indexOf('.')>0){ v.url='https://'+v.url; fixed=true; }
+        }
+      });
+      if(fixed) save();
+    } }
   }catch(e){}
 }
 
@@ -2809,9 +2820,15 @@ function closeLinkModal(){ el('linkModalMask').classList.remove('show'); }
 el('linkCancel').addEventListener('click', closeLinkModal);
 el('linkModalMask').addEventListener('click', function(e){ if(e.target===this) closeLinkModal(); });
 el('linkSave').addEventListener('click', function(){
-  var url = el('linkUrl').value.trim();
-  if(!url){ el('linkUrl').focus(); return; }
+  var raw = el('linkUrl').value.trim();
+  if(!raw){ el('linkUrl').focus(); return; }
+  /* 分享文案里自动提取真正的链接（抖音/小红书等 App 分享文本常带一堆文字） */
+  var um = raw.match(/https?:\/\/[^\s"'<>）】]+/i);
+  var url = um ? um[0] : raw;
   if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  url = url.replace(/[，。！？、）】…\s]+$/, '');
+  if(!/^https?:\/\/[^\s]+\.[^\s]+/i.test(url)){ alert('没识别出有效链接，请检查粘贴内容里是否包含 http(s):// 开头的网址'); return; }
+  el('linkUrl').value = url;
   var pf = detectPlatform(url);
   var entry = { id:'lnk_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
     type:'link', url:url, name:el('linkName').value.trim(), part:linkPart,
