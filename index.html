@@ -1114,6 +1114,12 @@
   .tbox-timer{ background:#F5FAF3; border:1px solid #DFEDD8; }
   .tbox-month{ background:#FDF3F0; border:1px solid #F3DED6; margin-top:0; padding-bottom:16px; }
   .track-io{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+/* 并行计时活动行（可同时跑多个，每行一个「结束」按钮） */
+.track-act{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.track-actname{ flex:1 1 auto; min-width:0; display:block; font-size:14px; font-weight:700; color:var(--accent-deep);
+  background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:7px 10px;
+  overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.track-act .btn{ flex:none; height:36px; }
   .track-io input{ flex:1 1 auto; min-width:0; font-size:13px; background:#fff; height:36px; padding:0 12px; }
   .track-io #trackToggle{ flex:none; white-space:nowrap; }
   .track-io input::placeholder{ color:#C9C2B8; }
@@ -1412,14 +1418,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     </div>
 
     <!-- 计时 + 时间轴（极浅奶绿底） -->
-    <div class="tbox tbox-timer">
-      <div class="track-io">
-        <div class="track-input-wrap">
-          <input type="text" id="trackInput" placeholder="输入或选择事项，如：写报告 / 运动 / 临时外出">
-          <button type="button" class="track-preset-btn" id="trackPresetBtn" aria-label="选择常用事项">▾</button>
-          <div class="track-preset-panel" id="trackPresetPanel" hidden></div>
-        </div>
-        <span class="track-live" id="trackLive" hidden>00:00</span>
+<div class="tbox tbox-timer">
+<div id="trackActives"></div>
+<div class="track-io">
+<div class="track-input-wrap">
+<input type="text" id="trackInput" placeholder="输入或选择事项，如：写报告 / 运动 / 临时外出">
+<button type="button" class="track-preset-btn" id="trackPresetBtn" aria-label="选择常用事项">▾</button>
+<div class="track-preset-panel" id="trackPresetPanel" hidden></div>
+</div>
 <button class="btn" id="trackToggle">开始计时</button>
 </div>
 </div>
@@ -2046,7 +2052,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
 /* ================= 基础数据 ================= */
 var STORE_KEY = 'myWorkbench.v1';
-var state = { days:{}, notes:[], pocket:[], videos:[], periodDays:[], growth:{records:[]}, coins:0 };
+var state = { days:{}, notes:[], pocket:[], videos:[], periodDays:[], growth:{records:[]}, coins:0, activeTracks:[] };
 var curDate = todayStr();
 
 function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
@@ -2095,6 +2101,10 @@ function load(){
   try{
     var raw = localStorage.getItem(STORE_KEY);
     if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; state.wishes=state.wishes||[];
+      /* 并行计时：旧版单个 activeTrack 迁移为数组 activeTracks */
+      if(state.activeTrack && !state.activeTracks) state.activeTracks=[state.activeTrack];
+      if(!Array.isArray(state.activeTracks)) state.activeTracks=[];
+      delete state.activeTrack;
       /* 修复旧版误存整段分享文案的链接：提取其中的真实网址 */
       var fixed=false;
       state.videos.forEach(function(v){
@@ -4271,20 +4281,18 @@ if(TRACK_ICONS[name]) return TRACK_ICONS[name];
 for(var k in TRACK_ICONS){ if(name.indexOf(k)>-1) return TRACK_ICONS[k]; }
 return '⏱';
 }
-function vtlRunningTrack(){
-var a = state.activeTrack, ed = new Date();
-return { name:a.name, color:trackColor(a.name),
-start:a.startHM, end:pad2(ed.getHours())+':'+pad2(ed.getMinutes()),
-min:Math.max(1, Math.round((Date.now()-a.startTs)/60000)), running:true };
-}
 function vtlRenderItems(){
 var box = el('vtlItems'); if(!box) return;
 var day = getDay(curDate);
 var list = (day.tracks||[]).slice().sort(function(x,y){ return toMin(x.start)-toMin(y.start); });
-if(state.activeTrack && curDate===state.activeTrack.date){
-list.push(vtlRunningTrack());
+(state.activeTracks||[]).forEach(function(a){
+if(a.date!==curDate) return;
+var ed = new Date();
+list.push({ name:a.name, color:trackColor(a.name), start:a.startHM,
+end:pad2(ed.getHours())+':'+pad2(ed.getMinutes()),
+min:Math.max(1, Math.round((Date.now()-a.startTs)/60000)), running:true });
+});
 list.sort(function(x,y){ return toMin(x.start)-toMin(y.start); });
-}
 /* 布局：胶囊一律骑在居中虚线上；信息条先试右侧、放不下（与右侧上一条重叠）再试左侧，
    两侧都放不下才顺延——频繁换事项时自然左右分开，互不遮挡 */
 var lastR = -999, lastL = -999, html = vtlHoursHtml();
@@ -4299,8 +4307,7 @@ var ttl = t.name+' '+t.start+'-'+t.end+'（'+fmtDur(t.min)+'）'+(t.running?' ·
 html += '<div class="vtl-item" data-vrun="'+(t.running?'1':'0')+'" data-vi="'+list.indexOf(t)+'" style="top:'+Math.round(top)+'px;">'
 +'<div class="vtl-caps'+(t.running?' running':'')+'" style="background:'+t.color+';" title="'+esc(ttl)+'">'+vtlIconOf(t.name)+'</div>'
 +'<div class="vtl-info '+side+(t.running?' running':'')+'" style="background:'+t.color+'26;" title="'+esc(ttl)+'">'
-+'<span class="vtl-name">'+esc(t.name)+' · '+fmtDur(t.min)+'</span>'
-+'<span class="vtl-time">'+t.start+'–'+t.end+'</span></div></div>';
++'<span class="vtl-name">'+esc(t.name)+' · '+fmtDur(t.min)+'</span></div></div>';
 });
 if(!list.length) html += '<div class="vtl-empty">今天还没有计时记录 ⏱</div>';
 box.innerHTML = html;
@@ -4320,36 +4327,23 @@ var trackTimer = null;
 function startTrackLive(){
   if(trackTimer) return;
   trackTimer = setInterval(function(){
-    if(!state.activeTrack){ clearInterval(trackTimer); trackTimer=null; return; }
-    var a = state.activeTrack;
-    var sec = Math.floor((Date.now()-a.startTs)/1000);
-var node = el('trackLive');
-if(node) node.textContent = pad2(Math.floor(sec/60))+':'+pad2(sec%60);
-if(curDate===a.date) vtlRenderItems(); /* 计时中每秒刷新竖轴胶囊 */
-}, 1000);
+    var acts = state.activeTracks || [];
+    if(!acts.length){ clearInterval(trackTimer); trackTimer=null; return; }
+    var anyToday = false;
+    acts.forEach(function(a, idx){
+      var sec = Math.floor((Date.now()-a.startTs)/1000);
+      var node = document.querySelectorAll('#trackActives .tlivenum')[idx];
+      if(node) node.textContent = pad2(Math.floor(sec/60))+':'+pad2(sec%60);
+      if(curDate===a.date) anyToday = true;
+    });
+    if(anyToday) vtlRenderItems(); /* 计时中每秒刷新竖轴胶囊 */
+  }, 1000);
 }
 function renderTrack(){
   renderTrackDate();
   var day = getDay(curDate);
-  var a = state.activeTrack || null;
-  var btn = el('trackToggle'), live = el('trackLive'), tInput = el('trackInput');
-  var wasTiming = tInput.classList.contains('timing');
-  if(a){
-    btn.textContent='结束计时'; btn.classList.add('btn-danger');
-    live.hidden=false; live.classList.add('on');
-    /* 计时中：输入框显示当前事项名，并与计时数字同步闪烁 */
-    if(tInput.value !== a.name) tInput.value = a.name;
-    tInput.readOnly = true; tInput.classList.add('timing');
-    var sec = Math.floor((Date.now()-a.startTs)/1000);
-    live.textContent = pad2(Math.floor(sec/60))+':'+pad2(sec%60);
-    startTrackLive();
-  } else {
-    btn.textContent='开始计时'; btn.classList.remove('btn-danger');
-    live.hidden=true; live.classList.remove('on');
-    if(wasTiming) tInput.value='';
-    tInput.readOnly = false; tInput.classList.remove('timing');
-  }
-/* 竖版时间轴（5:30–23:30 胶囊） */
+  renderTrackActives();
+/* 竖版时间轴（6:00–23:30 胶囊） */
 vtlRenderItems();
 var totalMin = 0;
 (day.tracks||[]).forEach(function(t){ totalMin += t.min; });
@@ -4413,32 +4407,46 @@ var totalMin = 0;
     }
   }
 }
-el('trackToggle').addEventListener('click', function(){
-  var a = state.activeTrack;
-  if(a){
-    var endTs = Date.now();
-    var sd = new Date(a.startTs), ed = new Date(endTs);
-    var min = Math.max(1, Math.round((endTs-a.startTs)/60000));
-    var day = getDay(a.date);
-    var col = trackColor(a.name);
-    day.tracks.push({ name:a.name, color:col,
-      start: pad2(sd.getHours())+':'+pad2(sd.getMinutes()),
-      end: pad2(ed.getHours())+':'+pad2(ed.getMinutes()), min:min });
-    state.activeTrack=null;
-    if(trackTimer){ clearInterval(trackTimer); trackTimer=null; }
-    save(); renderAll();
-  } else {
-    var v = el('trackInput').value.trim();
-    if(!v){ el('trackInput').focus(); return; }
-    var now = new Date();
-    state.activeTrack = { name:v, startTs:Date.now(), date:todayStr(), startHM: pad2(now.getHours())+':'+pad2(now.getMinutes()) };
-    trackColor(v);
-    save();
-    el('trackInput').value='';
-    renderTrack();
-  }
+/* 渲染并行计时活动行：每行=事项名+计时数字+结束按钮；主输入行始终可输入新事项 */
+function renderTrackActives(){
+var box = el('trackActives'); if(!box) return;
+var acts = state.activeTracks || [];
+box.innerHTML = acts.map(function(a, i){
+var sec = Math.floor((Date.now()-a.startTs)/1000);
+return '<div class="track-act">'
++'<span class="track-actname">'+vtlIconOf(a.name)+' '+esc(a.name)+'</span>'
++'<span class="track-live on tlivenum">'+pad2(Math.floor(sec/60))+':'+pad2(sec%60)+'</span>'
++'<button class="btn btn-danger" data-stop="'+i+'">结束</button></div>';
+}).join('');
+box.querySelectorAll('[data-stop]').forEach(function(b){
+b.addEventListener('click', function(){ stopTrack(+b.getAttribute('data-stop')); });
 });
-el('trackInput').addEventListener('keydown', function(e){ if(e.key==='Enter' && !state.activeTrack) el('trackToggle').click(); });
+if(acts.length) startTrackLive();
+}
+function stopTrack(idx){
+var a = (state.activeTracks||[])[idx]; if(!a) return;
+var endTs = Date.now();
+var sd = new Date(a.startTs), ed = new Date(endTs);
+var min = Math.max(1, Math.round((endTs-a.startTs)/60000));
+var day = getDay(a.date);
+day.tracks.push({ name:a.name, color:trackColor(a.name),
+start: pad2(sd.getHours())+':'+pad2(sd.getMinutes()),
+end: pad2(ed.getHours())+':'+pad2(ed.getMinutes()), min:min });
+state.activeTracks.splice(idx,1);
+save(); renderAll();
+}
+el('trackToggle').addEventListener('click', function(){
+  var v = el('trackInput').value.trim();
+  if(!v){ el('trackInput').focus(); return; }
+  var now = new Date();
+  state.activeTracks = state.activeTracks || [];
+  state.activeTracks.push({ name:v, startTs:Date.now(), date:todayStr(), startHM: pad2(now.getHours())+':'+pad2(now.getMinutes()) });
+  trackColor(v);
+  save();
+  el('trackInput').value='';
+  renderTrack();
+});
+el('trackInput').addEventListener('keydown', function(e){ if(e.key==='Enter') el('trackToggle').click(); });
 
 /* 时光小账：常用事项下拉（替换原生 datalist，手机端稳定显示一列文字） */
 var TRACK_PRESETS = ['英语学习','AI学习','自媒体学习','电商运营','阅读','听播客','接/送孩子','社交','工作','工作台打卡','吃饭','做家务','运动','刷视频','养生','拍素材','剪辑','护肤','日记','洗澡','睡觉','化妆'];
@@ -4456,7 +4464,6 @@ var TRACK_PRESETS = ['英语学习','AI学习','自媒体学习','电商运营',
   });
   panel.addEventListener('click', function(e){
     var it = e.target.closest && e.target.closest('.pp-item'); if(!it) return;
-    if(state.activeTrack){ close(); return; } /* 计时中不允许换事项，先结束计时 */
     input.value = it.getAttribute('data-name');
     close(); input.focus();
   });
