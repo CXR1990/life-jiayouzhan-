@@ -4177,7 +4177,9 @@ var TRACK_PALETTE = [
 ];
 var TRACK_ICONS = {
   '做饭':'🍳','吃饭':'🍚','做家务':'🧹','运动':'🏃','养生':'🌿','拍素材':'📷',
-  '剪辑':'✂️','运营TK':'📱','发视频':'📤','学习':'📖','护肤':'🧴','日记':'✍️','洗澡':'🛁','睡觉':'💤'
+  '剪辑':'✂️','护肤':'🧴','日记':'✍️','洗澡':'🛁','睡觉':'💤',
+'英语学习':'📖','AI学习':'🤖','自媒体学习':'📱','阅读':'📚','听播客':'🎧',
+'接/送孩子':'🚌','社交':'💬','工作':'💼','工作台打卡':'✅'
 };
 var TRACK_TICKS = [
   {l:'5点',off:0},{l:'7点',off:2},{l:'9点',off:4},{l:'11点',off:6},{l:'13点',off:8},
@@ -4391,7 +4393,7 @@ el('trackToggle').addEventListener('click', function(){
 el('trackInput').addEventListener('keydown', function(e){ if(e.key==='Enter' && !state.activeTrack) el('trackToggle').click(); });
 
 /* 时光小账：常用事项下拉（替换原生 datalist，手机端稳定显示一列文字） */
-var TRACK_PRESETS = ['学习','吃饭','做家务','运动','刷视频','看小说','养生','拍素材','剪辑','TK学习','发视频','护肤','日记','洗澡','睡觉','化妆'];
+var TRACK_PRESETS = ['英语学习','AI学习','自媒体学习','阅读','听播客','接/送孩子','社交','工作','工作台打卡','吃饭','做家务','运动','刷视频','养生','拍素材','剪辑','护肤','日记','洗澡','睡觉','化妆'];
 (function trackPresetInit(){
   var btn = el('trackPresetBtn'), panel = el('trackPresetPanel'), input = el('trackInput');
   if(!btn || !panel || !input) return;
