@@ -1138,23 +1138,25 @@
   .track-input-wrap input.timing{ animation:pulseLive 1.1s ease-in-out infinite;
     background:var(--accent-soft); border-color:var(--accent); color:var(--accent-deep);
     font-weight:bold; cursor:default; }
-  /* 竖版时间轴（6:00–23:30 · 拉长占屏 · 圆角矩形卡片 · 串行居中压线 / 并行左右分布） */
+  /* 竖版时间轴（06:00–23:00 · 单屏不滚动 · 色卡压线+文字侧边 · 串行居中/并行左右） */
   .vtl{ position:relative; margin:12px 0 4px; padding:14px 0 12px; background:#FDFBF6;
     border:1px solid #F1EADA; border-radius:16px; }
   .vtl-axis{ position:absolute; left:50%; top:14px; bottom:12px; border-left:3px dashed #D9AF6E; transform:translateX(-1px); }
   .vtl-hour{ position:absolute; left:8px; font-size:11px; font-weight:700;
     color:#8B7A5C; transform:translateY(-50%); font-variant-numeric:tabular-nums; }
-  .vtl-items{ position:relative; height:1260px; }
-  .vtl-card{ position:absolute; width:64px; border-radius:12px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:1px; padding:4px 3px; cursor:pointer; z-index:1;
-    box-shadow:0 2px 8px rgba(180,140,90,.25); user-select:none; overflow:hidden; }
+  .vtl-items{ position:relative; height:612px; }
+  .vtl-card{ position:absolute; width:56px; border-radius:14px; cursor:pointer; z-index:1;
+    box-shadow:0 2px 8px rgba(180,140,90,.22); }
   .vtl-card.center{ left:50%; transform:translateX(-50%); }
-  .vtl-card.side-r{ left:calc(50% + 40px); }
-  .vtl-card.side-l{ right:calc(50% + 40px); }
-  .vtl-card .vc-ico{ font-size:12px; line-height:1.1; }
-  .vtl-card .vc-name{ font-size:10px; font-weight:700; color:var(--ink); line-height:1.15; text-align:center; word-break:break-all; }
-  .vtl-card .vc-dur{ font-size:9px; font-weight:600; color:var(--sub); white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  .vtl-card.side-r{ left:calc(50% + 34px); }
+  .vtl-card.side-l{ right:calc(50% + 34px); }
   .vtl-card.running{ animation:pulseLive 1.1s ease-in-out infinite; outline:3px solid var(--accent-soft); }
+  .vtl-info{ position:absolute; transform:translateY(-50%); padding:4px 10px; border-radius:10px;
+    font-size:11px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; z-index:1; }
+  .vtl-info.center{ left:calc(50% + 38px); max-width:calc(50% - 46px); }
+  .vtl-info.side-r{ left:calc(50% + 98px); max-width:calc(50% - 106px); }
+  .vtl-info.side-l{ right:calc(50% + 98px); max-width:calc(50% - 130px); text-align:right; }
   .track-sub{ font-size:14px; color:var(--accent-deep); font-weight:bold; margin:0 0 10px; letter-spacing:.5px; }
   .piewrap{ display:flex; align-items:stretch; gap:18px; flex-wrap:wrap; min-height:240px; }
   .tpie{ width:132px; height:132px; border-radius:50%; background:#F1EAE0; flex:none; position:relative; align-self:center;
@@ -1428,7 +1430,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </div>
 </div>
 
-<!-- 纵向时间轴（5:30–23:30 · 计时完成自动上轴） -->
+<!-- 纵向时间轴（06:00–23:00 · 计时完成自动上轴） -->
 <div class="vtl" id="vtlBox"></div>
 
 <div class="track-below">
@@ -2103,6 +2105,9 @@ function load(){
       if(state.activeTrack && !state.activeTracks) state.activeTracks=[state.activeTrack];
       if(!Array.isArray(state.activeTracks)) state.activeTracks=[];
       delete state.activeTrack;
+      /* 配色升级迁移：旧高饱和色重映射为低饱和多巴胺淡色 */
+      state.trackColors = {};
+      Object.keys(state.days).forEach(function(k){ (state.days[k].tracks||[]).forEach(function(t){ t.color = trackColor(t.name); }); });
       /* 修复旧版误存整段分享文案的链接：提取其中的真实网址 */
       var fixed=false;
       state.videos.forEach(function(v){
@@ -4226,8 +4231,8 @@ document.addEventListener('click', function(e){
 
 /* ================= 时光小账（时间追踪） ================= */
 var TRACK_PALETTE = [
-  '#FF8FA3','#FFB570','#FFD93D','#6FE79C','#5BC8F5','#C79BF2','#FF9ECD','#7FD8E8',
-  '#A78BFA','#4FD8C4','#FFC53D','#F9A07B','#8CE0A0','#B5E853','#FF9F6E','#93B8FF'
+  '#F8BCCB','#F9CDA9','#F5E3A9','#C2E7B8','#AFD6EE','#CDBAEC','#F4C2DC','#B9E4DD',
+  '#D9C6F0','#A9DECE','#F2D8B4','#F5B9AC','#C9E0F5','#D7EAB0','#F7CDB2','#BFC5F2'
 ];
 var TRACK_ICONS = {
   '做饭':'🍳','吃饭':'🍚','做家务':'🧹','运动':'🏃','养生':'🌿','拍素材':'📷',
@@ -4260,12 +4265,12 @@ function fmtDur(min){
   return m+'分钟';
 }
 function buildTrackTicks(){
-/* 竖版时间轴骨架：6:00–23:30（360–1410分钟），压缩高度（0.6px/分钟=630px）；刻度在每次渲染时随事项一起输出 */
+/* 竖版时间轴骨架：06:00–23:00（360–1380分钟），0.6px/分钟=612px 单屏展示；刻度在每次渲染时随事项一起输出 */
 var box = el('vtlBox'); if(!box) return;
 box.innerHTML = '<div class="vtl-axis"></div><div class="vtl-items" id="vtlItems"></div>';
 }
-/* 竖版时间轴：6:00–23:30（360–1410分钟），1.2px/分钟=1260px，拉长占满整屏 */
-var VTL_START=360, VTL_SPAN=1050, VTL_SCALE=1.2;
+/* 竖版时间轴：06:00–23:00（360–1380分钟），0.6px/分钟=612px，整套刻度单屏展示不滚动 */
+var VTL_START=360, VTL_SPAN=1020, VTL_SCALE=0.6;
 function vtlTop(min){ return Math.max(0, Math.min(VTL_SPAN, min-VTL_START))*VTL_SCALE; }
 function vtlHoursHtml(){
 var s='';
@@ -4298,7 +4303,7 @@ var axisH = VTL_SPAN*VTL_SCALE;
 var lastEnd = -1, lastSide = '', lastBR = -999, lastBL = -999, html = vtlHoursHtml();
 list.forEach(function(t){
 var top0 = vtlTop(toMin(t.start));
-var h = Math.max(52, vtlTop(toMin(t.end)) - top0);
+var h = Math.max(40, vtlTop(toMin(t.end)) - top0);
 var side, top;
 if(lastEnd < 0 || toMin(t.start) >= lastEnd){ /* 串行：居中压线 */
 side = 'center'; top = top0;
@@ -4311,11 +4316,10 @@ if(side==='r') lastBR = top+h; else lastBL = top+h;
 if(side!=='center') lastSide = side;
 lastEnd = Math.max(lastEnd, toMin(t.end));
 if(top + h > axisH) top = Math.max(0, axisH - h); /* 末尾防溢出 */
-var ttl = t.name+' '+t.start+'-'+t.end+'（'+fmtDur(t.min)+'）'+(t.running?' · 计时中':' · 点击删除');
-html += '<div class="vtl-card '+side+(t.running?' running':'')+'" data-vi="'+list.indexOf(t)+'" style="top:'+Math.round(top)+'px; height:'+Math.round(h)+'px; background:'+t.color+';" title="'+esc(ttl)+'">'
-+'<span class="vc-ico">'+vtlIconOf(t.name)+'</span>'
-+'<span class="vc-name">'+esc(t.name)+'</span>'
-+'<span class="vc-dur">'+(t.running?'计时中':fmtDur(t.min))+'</span></div>';
+var ttl = t.name+' '+t.start+'-'+t.end+'（'+fmtDur(t.min)+'）'+(t.running?' · 计时中':' · 点击色块删除');
+var mid = Math.round(top + h/2);
+html += '<div class="vtl-card '+side+(t.running?' running':'')+'" data-vi="'+list.indexOf(t)+'" style="top:'+Math.round(top)+'px; height:'+Math.round(h)+'px; background:'+t.color+';" title="'+esc(ttl)+'"></div>'
++'<div class="vtl-info '+side+'" style="top:'+mid+'px; background:'+t.color+'40;" title="'+esc(ttl)+'">'+vtlIconOf(t.name)+' '+esc(t.name)+' · '+fmtDur(t.min)+'</div>';
 });
 box.innerHTML = html;
 box.querySelectorAll('.vtl-card').forEach(function(card){
@@ -4350,7 +4354,7 @@ function renderTrack(){
   renderTrackDate();
   var day = getDay(curDate);
   renderTrackActives();
-/* 竖版时间轴（6:00–23:30 胶囊） */
+/* 竖版时间轴（06:00–23:00 色卡） */
 vtlRenderItems();
 var totalMin = 0;
 (day.tracks||[]).forEach(function(t){ totalMin += t.min; });
