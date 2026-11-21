@@ -1138,24 +1138,24 @@
   .track-input-wrap input.timing{ animation:pulseLive 1.1s ease-in-out infinite;
     background:var(--accent-soft); border-color:var(--accent); color:var(--accent-deep);
     font-weight:bold; cursor:default; }
-  /* 竖版时间轴（06:00–23:00 · 拉长占屏 · 色卡压线+文字侧边 · 串行居中/并行左右大幅错开） */
+  /* 竖版时间轴（06:00–23:00 · 轴恒居中 · 串行压线/并行对称分割虚线两侧 · 文字两行与色块居中对齐） */
   .vtl{ position:relative; margin:12px 0 4px; padding:14px 0 12px; background:#FDFBF6;
     border:1px solid #F1EADA; border-radius:16px; }
-  .vtl-axis{ position:absolute; left:50%; top:14px; bottom:12px; border-left:3px dashed #D9AF6E; transform:translateX(-1px); }
+  .vtl-axis{ position:absolute; left:50%; top:14px; bottom:12px; border-left:3px dashed #D9AF6E; transform:translateX(-1px); z-index:2; pointer-events:none; }
   .vtl-hour{ position:absolute; left:8px; font-size:11px; font-weight:700;
-    color:#8B7A5C; transform:translateY(-50%); font-variant-numeric:tabular-nums; }
+    color:#8B7A5C; transform:translateY(-50%); font-variant-numeric:tabular-nums; z-index:3; }
   .vtl-items{ position:relative; height:816px; }
   .vtl-card{ position:absolute; width:56px; border-radius:14px; cursor:pointer; z-index:1;
     box-shadow:0 2px 8px rgba(180,140,90,.22); }
   .vtl-card.center{ left:50%; transform:translateX(-50%); }
-  .vtl-card.side-r{ left:calc(50% + 48px); }
-  .vtl-card.side-l{ right:calc(50% + 48px); }
+  .vtl-card.side-r{ left:calc(50% + 4px); }
+  .vtl-card.side-l{ right:calc(50% + 4px); }
   .vtl-card.running{ animation:pulseLive 1.1s ease-in-out infinite; outline:3px solid var(--accent-soft); }
-  .vtl-info{ position:absolute; transform:translateY(-50%); padding:4px 9px; border-radius:10px;
-    font-size:11px; font-weight:700; color:var(--ink); line-height:1.3; white-space:normal; z-index:1; }
-  .vtl-info.center{ left:calc(50% + 36px); max-width:calc(50% - 44px); }
-  .vtl-info.side-r{ left:calc(50% + 112px); max-width:calc(50% - 120px); }
-  .vtl-info.side-l{ right:calc(50% + 112px); max-width:calc(50% - 120px); text-align:right; }
+  .vtl-info{ position:absolute; transform:translateY(-50%); padding:5px 10px; border-radius:12px;
+    font-size:11px; line-height:1.35; z-index:2; }
+  .vtl-info.side-l{ text-align:right; }
+  .vtl-name{ font-weight:700; color:var(--ink); }
+  .vtl-time{ font-size:10px; font-weight:600; color:var(--sub); margin-top:1px; }
   .track-sub{ font-size:14px; color:var(--accent-deep); font-weight:bold; margin:0 0 10px; letter-spacing:.5px; }
   .piewrap{ display:flex; align-items:stretch; gap:18px; flex-wrap:wrap; min-height:240px; }
   .tpie{ width:132px; height:132px; border-radius:50%; background:#F1EAE0; flex:none; position:relative; align-self:center;
@@ -4296,59 +4296,61 @@ end:pad2(ed.getHours())+':'+pad2(ed.getMinutes()),
 min:Math.max(1, Math.round((Date.now()-a.startTs)/60000)), running:true });
 });
 list.sort(function(x,y){ return toMin(x.start)-toMin(y.start); });
-/* 布局：色卡上下边界严格对齐起止时间；串行居中压线、并行左右分开。
-   卡片间按矩形碰撞检测：理想位置放不下就换边，三边都占满才小幅下移 */
+/* 布局：轴线恒居中；串行任务色块居中压线；并行任务左右对称紧贴虚线分布
+   （以轴线为中心平均分割到两侧）；文字两行（事项/时长）与色块垂直居中，
+   置于色块外侧，自动避让不重叠，永不甩到屏幕边缘 */
 var axisH = VTL_SPAN*VTL_SCALE;
 var W = box.clientWidth || 390, C = W/2;
-var cardRects = []; /* 已放置卡片 {x1,x2,y1,y2} */
-function cardHits(r){ for(var i=0;i<cardRects.length;i++){ var q=cardRects[i]; if(r.x1<q.x2 && r.x2>q.x1 && r.y1<q.y2 && r.y2>q.y1) return true; } return false; }
-function cardX(side){ return side==='center' ? C-28 : side==='r' ? C+48 : C-104; }
-var lastEnd = -1, placed = [], html = vtlHoursHtml();
+var CW = 56, GAP = 4;
+var cardRects = [], placed = [], html = vtlHoursHtml();
+var lastEnd = -1, flip = 'r', sideBottom = { r:-999, l:-999 };
 list.forEach(function(t){
 var top0 = vtlTop(toMin(t.start));
 var h = Math.max(40, vtlTop(toMin(t.end)) - top0);
 if(top0 + h > axisH) top0 = Math.max(0, axisH - h);
 var parallel = lastEnd >= 0 && toMin(t.start) < lastEnd;
-var cands = parallel ? ['r','l','center'] : ['center','r','l'];
-var side = cands[0], top = top0, ok = false;
-for(var ci=0; ci<cands.length && !ok; ci++){
-var x1 = cardX(cands[ci]);
-if(!cardHits({x1:x1, x2:x1+56, y1:top0, y2:top0+h})){ side=cands[ci]; top=top0; ok=true; }
+var side, top = top0;
+if(!parallel){ side = 'center'; }
+else {
+side = flip;
+top = Math.max(top0, sideBottom[side]+6);
+var other = (side==='r') ? 'l' : 'r';
+var topO = Math.max(top0, sideBottom[other]+6);
+if(topO + 10 < top){ side = other; top = topO; }
+sideBottom[side] = top + h;
+flip = (side==='r') ? 'l' : 'r';
 }
-if(!ok){ /* 三边都被占：沿首选边向下顺延 */
-side = cands[0]; top = top0;
-for(var tries=0; tries<40; tries++){
-var x1b = cardX(side);
-if(!cardHits({x1:x1b, x2:x1b+56, y1:top, y2:top+h})) break;
-top += 8;
-}
-if(top + h > axisH) top = Math.max(0, axisH - h);
-}
-var px = cardX(side);
-cardRects.push({x1:px, x2:px+56, y1:top, y2:top+h});
+var left = (side==='center') ? C-CW/2 : (side==='r') ? C+GAP : C-GAP-CW;
+cardRects.push({x1:left, x2:left+CW, y1:top, y2:top+h});
 lastEnd = Math.max(lastEnd, toMin(t.end));
 placed.push({t:t, side:side, top:top, h:h});
 });
-/* 第二遍：文字胶囊放在卡片中线高度，被其他卡片/胶囊挡住则向下顺延到空闲处 */
+/* 文字胶囊：第一行事项名、第二行时长，垂直居中于色块中线，被挡则小幅下移 */
 var pillRects = cardRects.slice();
 function pillHits(r){ for(var i=0;i<pillRects.length;i++){ var q=pillRects[i]; if(r.x1<q.x2 && r.x2>q.x1 && r.y1<q.y2 && r.y2>q.y1) return true; } return false; }
 placed.forEach(function(p){
-var pw = Math.min(150, 30 + p.t.name.length*11 + fmtDur(p.t.min).length*10);
-var px1 = p.side==='center' ? C+36 : p.side==='r' ? C+112 : C-112-pw;
-var py = p.top + p.h/2 - 15;
-for(var pt=0; pt<40; pt++){
-if(!pillHits({x1:px1, x2:px1+pw, y1:py, y2:py+30})) break;
-py += 6;
+var t = p.t;
+var pw = Math.max(16 + t.name.length*12, 12 + fmtDur(t.min).length*10) + 22;
+var room = (p.side==='l') ? C-84 : W-C-84;
+pw = Math.max(70, Math.min(pw, room));
+var ph = 38;
+var px1 = (p.side==='center') ? C+CW/2+8 : (p.side==='r') ? C+GAP+CW+8 : C-GAP-CW-8-pw;
+var y1 = p.top + p.h/2 - ph/2;
+for(var pt=0; pt<60; pt++){
+if(!pillHits({x1:px1, x2:px1+pw, y1:y1, y2:y1+ph})) break;
+y1 += 6;
 }
-py = Math.min(py, axisH - 30);
-pillRects.push({x1:px1, x2:px1+pw, y1:py, y2:py+30});
-p.py = py;
+y1 = Math.max(0, Math.min(y1, axisH-ph));
+pillRects.push({x1:px1, x2:px1+pw, y1:y1, y2:y1+ph});
+p.pTop = y1 + ph/2; p.pLeft = px1;
 });
 placed.forEach(function(p){
 var t = p.t;
 var ttl = t.name+' '+t.start+'-'+t.end+'（'+fmtDur(t.min)+'）'+(t.running?' · 计时中':' · 点击色块删除');
 html += '<div class="vtl-card '+p.side+(t.running?' running':'')+'" data-vi="'+list.indexOf(t)+'" style="top:'+Math.round(p.top)+'px; height:'+Math.round(p.h)+'px; background:'+t.color+';" title="'+esc(ttl)+'"></div>'
-+'<div class="vtl-info '+p.side+'" style="top:'+Math.round(p.py+15)+'px; background:'+t.color+'40;" title="'+esc(ttl)+'">'+vtlIconOf(t.name)+' '+esc(t.name)+' · '+fmtDur(t.min)+'</div>';
++'<div class="vtl-info '+p.side+'" style="top:'+Math.round(p.pTop)+'px; left:'+Math.round(p.pLeft)+'px; background:'+t.color+'4D;" title="'+esc(ttl)+'">'
++'<div class="vtl-name">'+vtlIconOf(t.name)+' '+esc(t.name)+'</div>'
++'<div class="vtl-time">'+(t.running?'计时中':fmtDur(t.min))+'</div></div>';
 });
 box.innerHTML = html;
 box.querySelectorAll('.vtl-card').forEach(function(card){
