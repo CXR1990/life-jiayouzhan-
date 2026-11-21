@@ -1111,6 +1111,9 @@
     border-radius:10px; padding:5px 10px; flex:none; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .track-live.on{ animation:pulseLive 1.1s ease-in-out infinite; }
   @keyframes pulseLive{ 0%,100%{opacity:1;} 50%{opacity:.5;} }
+  .track-input-wrap input.timing{ animation:pulseLive 1.1s ease-in-out infinite;
+    background:var(--accent-soft); border-color:var(--accent); color:var(--accent-deep);
+    font-weight:bold; cursor:default; }
   .tlwrap{ margin:4px 0 2px; position:relative; }
   .tlbar{ position:relative; height:36px; }
   .tlbar::after{ content:""; position:absolute; top:50%; left:0; right:0; height:0; z-index:2;
@@ -4248,16 +4251,22 @@ function renderTrack(){
   renderTrackDate();
   var day = getDay(curDate);
   var a = state.activeTrack || null;
-  var btn = el('trackToggle'), live = el('trackLive');
+  var btn = el('trackToggle'), live = el('trackLive'), tInput = el('trackInput');
+  var wasTiming = tInput.classList.contains('timing');
   if(a){
     btn.textContent='结束计时'; btn.classList.add('btn-danger');
     live.hidden=false; live.classList.add('on');
+    /* 计时中：输入框显示当前事项名，并与计时数字同步闪烁 */
+    if(tInput.value !== a.name) tInput.value = a.name;
+    tInput.readOnly = true; tInput.classList.add('timing');
     var sec = Math.floor((Date.now()-a.startTs)/1000);
     live.textContent = pad2(Math.floor(sec/60))+':'+pad2(sec%60);
     startTrackLive();
   } else {
     btn.textContent='开始计时'; btn.classList.remove('btn-danger');
     live.hidden=true; live.classList.remove('on');
+    if(wasTiming) tInput.value='';
+    tInput.readOnly = false; tInput.classList.remove('timing');
   }
   var bar = el('tlBar'); bar.innerHTML='';
   var totalMin = 0;
@@ -4397,6 +4406,7 @@ var TRACK_PRESETS = ['学习','吃饭','做家务','运动','刷视频','看小�
   });
   panel.addEventListener('click', function(e){
     var it = e.target.closest && e.target.closest('.pp-item'); if(!it) return;
+    if(state.activeTrack){ close(); return; } /* 计时中不允许换事项，先结束计时 */
     input.value = it.getAttribute('data-name');
     close(); input.focus();
   });
