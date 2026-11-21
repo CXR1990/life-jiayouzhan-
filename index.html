@@ -289,9 +289,27 @@
   }
   #trendPage.show{ display:block; }
   .trend-tip{ font-size:12px; color:#3a6b4a; background:#ecfaf0; border:1px solid #cfe8d6; border-radius:10px; padding:9px 12px; line-height:1.6; margin-bottom:14px; }
-  .trend-tabs{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
-  .trend-tabs button{ border:1px solid var(--line); background:#fff; color:var(--sub); font-size:12px; font-weight:600; padding:7px 12px; border-radius:100px; cursor:pointer; }
-  .trend-tabs button.on{ background:var(--mint); color:#fff; border-color:var(--mint); }
+.trend-tabs{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+.trend-tabs button{ border:1px solid var(--line); background:#fff; color:var(--sub); font-size:12px; font-weight:600; padding:7px 12px; border-radius:100px; cursor:pointer; }
+.trend-tabs button.on{ background:var(--mint); color:#fff; border-color:var(--mint); }
+/* 流水复盘 */
+.rv-bar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.rv-mode{ display:flex; gap:7px; }
+.rv-mode button{ border:1px solid var(--line); background:#fff; color:var(--sub); font-size:12px; font-weight:600; padding:7px 14px; border-radius:100px; cursor:pointer; }
+.rv-mode button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.rv-nav{ display:flex; align-items:center; gap:8px; }
+.rv-nav .rvbtn{ width:30px; height:30px; border:1px solid var(--line); background:#fff; border-radius:50%; font-size:15px; color:var(--sub); cursor:pointer; line-height:1; padding:0; }
+#rvLabel{ font-size:13px; font-weight:700; color:var(--ink); min-width:112px; text-align:center; }
+.rv-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; }
+.rv-grid{ display:inline-grid; gap:4px; min-width:100%; }
+.rv-h{ font-size:11px; font-weight:700; color:var(--sub); text-align:center; padding:4px 0; }
+.rv-h.today{ color:var(--accent); }
+.rv-name{ display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--ink); padding-right:6px; white-space:nowrap; }
+.rv-cell{ width:20px; height:20px; border-radius:6px; background:#F1EEE9; align-self:center; justify-self:center; }
+.rv-cell.on{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.05); }
+.rv-cell.today{ outline:2px solid var(--accent); outline-offset:1px; }
+.rv-future{ opacity:.45; }
+.rv-foot{ margin-top:14px; font-size:11px; color:var(--sub); line-height:1.7; }
   .trend-card{ background:#fff; border:1px solid #E2EFE6; border-radius:14px; padding:14px; margin-bottom:14px; }
   .trend-card .tc-ttl{ font-size:14px; font-weight:800; color:var(--ink); margin-bottom:2px; }
   .trend-card .tc-ttl .tc-u{ font-size:11px; font-weight:500; color:#B69B7C; }
@@ -1351,6 +1369,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   <div class="navitem" data-nav="period"><span class="nico">🌸</span>经期管理</div>
   <div class="navitem" data-nav="growth"><span class="nico">🌱</span>美美进化</div>
 
+<div class="navitem" data-nav="review"><span class="nico">🗓️</span>流水复盘</div>
 <div class="navitem" data-nav="stats"><span class="nico">📊</span>月度统计</div>
       <div class="navitem" data-nav="sync"><span class="nico">☁️</span>备份</div>
     </aside>
@@ -1868,6 +1887,29 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     </div>
   <div class="gdetail" id="gDetail"><div class="gdbox"><button class="gdclose" id="gdClose">×</button><div id="gdBody"></div></div></div>
   </div>
+
+<!-- 流水复盘 -->
+<div class="card" data-sec="review">
+<div class="sec-head">
+<div class="sec-ico" style="background:var(--accent-soft);">🗓️</div>
+<h2>流水复盘</h2>
+<span class="hint">自动读取当天各板块记录 · 21:30 后打开即当日完整复盘</span>
+</div>
+<div class="rv-bar">
+<div class="rv-mode">
+<button type="button" data-rvmode="week" class="on">周复盘</button>
+<button type="button" data-rvmode="month">月复盘</button>
+</div>
+<div class="rv-nav">
+<button type="button" id="rvPrev" title="上一周/月">‹</button>
+<span id="rvLabel"></span>
+<button type="button" id="rvNext" title="下一周/月">›</button>
+<button type="button" id="rvToday" class="btn small ghost" style="width:auto;height:auto;border-radius:10px;">今天</button>
+</div>
+</div>
+<div class="rv-scroll"><div id="rvGrid"></div></div>
+<div class="rv-foot">判定来源：时光小账计时（AI学习 / 自媒体学习 / 电商运营 / 拍素材 / 剪辑 / 听播客 / 运动护肤类事项）· 运动健身打卡 · 肌肤护理打卡 · 英语学习跟读 —— 有当天记录就自动填色，无需手动打勾。</div>
+</div>
 
 <div class="card" data-sec="stats">
     <div class="sec-head">
@@ -4178,7 +4220,7 @@ var TRACK_PALETTE = [
 var TRACK_ICONS = {
   '做饭':'🍳','吃饭':'🍚','做家务':'🧹','运动':'🏃','养生':'🌿','拍素材':'📷',
   '剪辑':'✂️','护肤':'🧴','日记':'✍️','洗澡':'🛁','睡觉':'💤',
-'英语学习':'📖','AI学习':'🤖','自媒体学习':'📱','阅读':'📚','听播客':'🎧',
+'英语学习':'📖','AI学习':'🤖','自媒体学习':'📱','电商运营':'🛒','阅读':'📚','听播客':'🎧',
 '接/送孩子':'🚌','社交':'💬','工作':'💼','工作台打卡':'✅'
 };
 var TRACK_TICKS = [
@@ -4393,7 +4435,7 @@ el('trackToggle').addEventListener('click', function(){
 el('trackInput').addEventListener('keydown', function(e){ if(e.key==='Enter' && !state.activeTrack) el('trackToggle').click(); });
 
 /* 时光小账：常用事项下拉（替换原生 datalist，手机端稳定显示一列文字） */
-var TRACK_PRESETS = ['英语学习','AI学习','自媒体学习','阅读','听播客','接/送孩子','社交','工作','工作台打卡','吃饭','做家务','运动','刷视频','养生','拍素材','剪辑','护肤','日记','洗澡','睡觉','化妆'];
+var TRACK_PRESETS = ['英语学习','AI学习','自媒体学习','电商运营','阅读','听播客','接/送孩子','社交','工作','工作台打卡','吃饭','做家务','运动','刷视频','养生','拍素材','剪辑','护肤','日记','洗澡','睡觉','化妆'];
 (function trackPresetInit(){
   var btn = el('trackPresetBtn'), panel = el('trackPresetPanel'), input = el('trackInput');
   if(!btn || !panel || !input) return;
@@ -4821,7 +4863,7 @@ function renderAll(){
   safeRender(function(){ renderTodos(); renderParts(); });
   safeRender(function(){ renderCheckGrid('healthGrid', 'health'); renderCheckGrid('skinGrid', 'skin'); renderCheckGrid('habitGrid', 'habit'); });
   safeRender(function(){ renderFinStats(); renderFinCharts(); renderNotes(); renderPocket(); });
-  safeRender(function(){ renderEngStats(); renderStats(); renderSleepCharts(); renderJar(); renderTrack(); renderPeriod(); renderGrowth(); });
+  safeRender(function(){ renderEngStats(); renderStats(); renderSleepCharts(); renderJar(); renderTrack(); renderPeriod(); renderGrowth(); renderReview(); });
   safeRender(renderMemos);
   safeRender(renderWishes);
 }
@@ -5101,9 +5143,92 @@ function renderTrendPage(){
 el('bodyTrendBtn').addEventListener('click', bodyTrendOpen);
 el('trendExit').addEventListener('click', bodyTrendClose);
 el('trendTabs').addEventListener('click', function(e){
-  var b=e.target.closest && e.target.closest('button[data-m]'); if(!b) return;
-  trendMetric=b.dataset.m; renderTrendPage();
+var b=e.target.closest && e.target.closest('button[data-m]'); if(!b) return;
+trendMetric=b.dataset.m; renderTrendPage();
 });
+
+/* ================= 流水复盘 ================= */
+function rvTrackHit(d, kw){
+var ts = (d && d.tracks) || [];
+for(var i=0;i<ts.length;i++){ if((ts[i].name||'').indexOf(kw)>-1) return true; }
+return false;
+}
+var REVIEW_ITEMS = [
+{k:'eng',   n:'英语学习',   e:'📖', c:'#7FA8DC', chk:function(d){ var e=d.english||{}; return !!(e.readDone || (e.readMin && String(e.readMin).trim() && parseFloat(e.readMin)>0)); }},
+{k:'ai',    n:'AI学习',     e:'🤖', c:'#A78BDB', chk:function(d){ return rvTrackHit(d,'AI'); }},
+{k:'media', n:'自媒体学习', e:'📱', c:'#E392AC', chk:function(d){ return rvTrackHit(d,'自媒体'); }},
+{k:'ecom',  n:'电商运营',   e:'🛒', c:'#E0B26A', chk:function(d){ return rvTrackHit(d,'电商'); }},
+{k:'film',  n:'拍素材',     e:'📷', c:'#8FBF96', chk:function(d){ return rvTrackHit(d,'拍素材'); }},
+{k:'edit',  n:'剪辑',       e:'✂️', c:'#6FB0D6', chk:function(d){ return rvTrackHit(d,'剪辑'); }},
+{k:'sport', n:'运动',       e:'💪', c:'#DE8A8A', chk:function(d){ var p=(d.fitness&&d.fitness.parts)||{}; for(var k in p){ if(p[k]) return true; } return rvTrackHit(d,'运动'); }},
+{k:'pod',   n:'听播客',     e:'🎧', c:'#9BAEDB', chk:function(d){ return rvTrackHit(d,'播客'); }},
+{k:'skin',  n:'护肤',       e:'🧴', c:'#D297BC', chk:function(d){ var s=d.skin||{}; for(var k in s){ if(s[k]) return true; } return rvTrackHit(d,'护肤'); }}
+];
+var rvMode='week', rvAnchor=todayStr();
+function rvDaysList(){
+if(rvMode==='week'){
+var base=new Date(rvAnchor+'T00:00:00');
+var wd=(base.getDay()+6)%7; /* 周一=0 */
+base.setDate(base.getDate()-wd);
+var out=[];
+for(var i=0;i<7;i++){ var d=new Date(base); d.setDate(base.getDate()+i); out.push(d); }
+return out;
+}
+var p=rvAnchor.split('-'), y=parseInt(p[0]), m=parseInt(p[1]);
+var n=new Date(y, m, 0).getDate(), out2=[];
+for(var j=1;j<=n;j++) out2.push(new Date(y, m-1, j));
+return out2;
+}
+function rvKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function renderReview(){
+var grid=el('rvGrid'), lab=el('rvLabel'); if(!grid||!lab) return;
+var days=rvDaysList(), today=todayStr();
+if(rvMode==='week'){
+lab.textContent = rvKey(days[0]).slice(5).replace('-','.')+' – '+rvKey(days[6]).slice(5).replace('-','.');
+} else {
+lab.textContent = days[0].getFullYear()+' 年 '+(days[0].getMonth()+1)+' 月';
+}
+var cols=days.length;
+var html='<div class="rv-grid" style="grid-template-columns:96px repeat('+cols+',22px);">';
+html+='<div></div>';
+days.forEach(function(d){
+var k=rvKey(d), isT=k===today;
+var t=rvMode==='week' ? '日一二三四五六'.charAt(d.getDay()) : (d.getDate());
+html+='<div class="rv-h'+(isT?' today':'')+'">'+t+'</div>';
+});
+REVIEW_ITEMS.forEach(function(it){
+html+='<div class="rv-name"><span>'+it.e+'</span>'+it.n+'</div>';
+days.forEach(function(d){
+var k=rvKey(d);
+var done=false;
+try{ var day=state.days[k]; if(day) done=!!it.chk(day); }catch(e){}
+var cls='rv-cell'+(done?' on':'')+((k===today)?' today':'')+((k>today)?' rv-future':'');
+html+='<div class="'+cls+'"'+(done?' style="background:'+it.c+';"':'')+'></div>';
+});
+});
+html+='</div>';
+grid.innerHTML=html;
+}
+document.querySelectorAll('.rv-mode button').forEach(function(b){
+b.addEventListener('click', function(){
+document.querySelectorAll('.rv-mode button').forEach(function(x){ x.classList.remove('on'); });
+b.classList.add('on');
+rvMode=b.dataset.rvmode;
+el('rvToday').textContent = rvMode==='week' ? '本周' : '本月';
+renderReview();
+});
+});
+el('rvPrev').addEventListener('click', function(){
+var d=new Date(rvAnchor+'T00:00:00');
+if(rvMode==='week') d.setDate(d.getDate()-7); else d.setMonth(d.getMonth()-1);
+rvAnchor=rvKey(d); renderReview();
+});
+el('rvNext').addEventListener('click', function(){
+var d=new Date(rvAnchor+'T00:00:00');
+if(rvMode==='week') d.setDate(d.getDate()+7); else d.setMonth(d.getMonth()+1);
+rvAnchor=rvKey(d); renderReview();
+});
+el('rvToday').addEventListener('click', function(){ rvAnchor=todayStr(); renderReview(); });
 function achState(){
   var total=gDistinctDates(), streak=gStreak();
   return GROWTH_ACH.map(function(a){
