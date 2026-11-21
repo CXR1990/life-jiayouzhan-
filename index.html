@@ -1132,21 +1132,25 @@
   .track-input-wrap input.timing{ animation:pulseLive 1.1s ease-in-out infinite;
     background:var(--accent-soft); border-color:var(--accent); color:var(--accent-deep);
     font-weight:bold; cursor:default; }
-  /* 竖版时间轴（5:30–23:30 · 1px=1分钟 · 胶囊造型）· 独立模块置于页面顶部 */
-  .vtl{ position:relative; margin:12px 0 4px; padding:18px 0 14px; background:#FDFBF6;
+  /* 竖版时间轴（6:00–23:30 · 压缩高度 · 虚线居中 · 左右交替防重叠） */
+  .vtl{ position:relative; margin:12px 0 4px; padding:14px 0 12px; background:#FDFBF6;
     border:1px solid #F1EADA; border-radius:16px; }
-  .vtl-axis{ position:absolute; left:92px; top:14px; bottom:14px; border-left:3px dashed #D9AF6E; }
-  .vtl-hour{ position:absolute; left:0; width:76px; text-align:right; padding-right:8px; font-size:11px; font-weight:700;
+  .vtl-axis{ position:absolute; left:50%; top:14px; bottom:12px; border-left:3px dashed #D9AF6E; transform:translateX(-1px); }
+  .vtl-hour{ position:absolute; left:8px; font-size:11px; font-weight:700;
     color:#8B7A5C; transform:translateY(-50%); font-variant-numeric:tabular-nums; }
-  .vtl-items{ position:relative; height:1080px; }
-  .vtl-item{ position:absolute; left:70px; display:flex; align-items:flex-start; gap:12px; }
-  .vtl-caps{ flex:none; width:44px; border-radius:999px; display:flex; align-items:center; justify-content:center;
-    font-size:20px; cursor:pointer; z-index:1; box-shadow:0 3px 10px rgba(180,140,90,.28); user-select:none; }
+  .vtl-items{ position:relative; height:630px; }
+  .vtl-item{ position:absolute; left:0; right:0; height:0; }
+  .vtl-caps{ position:absolute; left:50%; transform:translateX(-50%); top:0; width:30px; height:30px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; z-index:1;
+    box-shadow:0 2px 8px rgba(180,140,90,.28); user-select:none; }
   .vtl-caps.running{ animation:pulseLive 1.1s ease-in-out infinite; outline:3px solid var(--accent-soft); }
-  .vtl-info{ padding-top:9px; min-width:0; }
-  .vtl-time{ font-size:11px; font-weight:700; color:var(--sub); font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .vtl-name{ font-size:13px; font-weight:700; color:var(--ink); margin-top:2px; word-break:break-all; }
-  .vtl-empty{ position:absolute; left:110px; top:14px; font-size:12px; color:#C2B49B; }
+  .vtl-info{ position:absolute; top:4px; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:700; color:var(--ink);
+    max-width:calc(50% - 34px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; z-index:1; }
+  .vtl-info.r{ left:calc(50% + 21px); text-align:left; }
+  .vtl-info.l{ right:calc(50% + 21px); text-align:right; }
+  .vtl-time{ font-size:10px; font-weight:600; color:var(--sub); margin-left:5px; font-variant-numeric:tabular-nums; }
+  .vtl-info.running{ outline:2px solid var(--accent-soft); }
+  .vtl-empty{ position:absolute; left:50%; transform:translateX(-50%); top:60px; font-size:12px; color:#8B7A5C; white-space:nowrap; }
   .track-sub{ font-size:14px; color:var(--accent-deep); font-weight:bold; margin:0 0 10px; letter-spacing:.5px; }
   .piewrap{ display:flex; align-items:stretch; gap:18px; flex-wrap:wrap; min-height:240px; }
   .tpie{ width:132px; height:132px; border-radius:50%; background:#F1EAE0; flex:none; position:relative; align-self:center;
@@ -4248,17 +4252,17 @@ function fmtDur(min){
   return m+'分钟';
 }
 function buildTrackTicks(){
-/* 竖版时间轴骨架：5:30–23:30（330–1410分钟），1080px 高，1px=1分钟；刻度在每次渲染时随事项一起输出 */
+/* 竖版时间轴骨架：6:00–23:30（360–1410分钟），压缩高度（0.6px/分钟=630px）；刻度在每次渲染时随事项一起输出 */
 var box = el('vtlBox'); if(!box) return;
 box.innerHTML = '<div class="vtl-axis"></div><div class="vtl-items" id="vtlItems"></div>';
 }
-var VTL_START=330, VTL_SPAN=1080;
-function vtlPos(min){ return Math.max(0, Math.min(VTL_SPAN, min-VTL_START)); }
+var VTL_START=360, VTL_SPAN=1050, VTL_SCALE=0.6, VTL_ROW=36;
+function vtlTop(min){ return Math.max(0, Math.min(VTL_SPAN, min-VTL_START))*VTL_SCALE; }
 function vtlHoursHtml(){
 var s='';
-for(var m=360; m<=1380; m+=60){
+for(var m=360; m<=1320; m+=120){ /* 每2小时一个刻度：06:00…22:00 */
 var hm = pad2(Math.floor(m/60))+':'+pad2(m%60);
-s += '<span class="vtl-hour" style="top:'+vtlPos(m)+'px;">'+hm+'</span>';
+s += '<span class="vtl-hour" style="top:'+vtlTop(m)+'px;">'+hm+'</span>';
 }
 return s;
 }
@@ -4281,26 +4285,27 @@ if(state.activeTrack && curDate===state.activeTrack.date){
 list.push(vtlRunningTrack());
 list.sort(function(x,y){ return toMin(x.start)-toMin(y.start); });
 }
-var lastBottom = -999, html = vtlHoursHtml();
+/* 布局：胶囊一律骑在居中虚线上；信息条先试右侧、放不下（与右侧上一条重叠）再试左侧，
+   两侧都放不下才顺延——频繁换事项时自然左右分开，互不遮挡 */
+var lastR = -999, lastL = -999, html = vtlHoursHtml();
 list.forEach(function(t){
-var top = vtlPos(toMin(t.start));
-var dur = Math.max(1, toMin(t.end)-toMin(t.start));
-var capsH = Math.min(Math.max(46, dur), 320);
-var rowH = Math.max(capsH, 54);
-if(top < lastBottom+10) top = lastBottom+10;
-lastBottom = top+rowH;
-if(top+rowH > VTL_SPAN) top = Math.max(0, VTL_SPAN-rowH); /* 末尾防溢出 */
-var ttl = t.name+' '+t.start+'-'+t.end+'（'+fmtDur(t.min)+'）'+(t.running?' · 计时中':' · 点击删除');
+var pos = vtlTop(toMin(t.start));
+var topR = Math.max(pos, lastR+4), topL = Math.max(pos, lastL+4);
+var side, top;
+if(topR <= topL){ side='r'; top=topR; lastR = top+VTL_ROW; }
+else            { side='l'; top=topL; lastL = top+VTL_ROW; }
+if(top > VTL_SPAN*VTL_SCALE-2) top = VTL_SPAN*VTL_SCALE-2; /* 末尾防溢出 */
+var ttl = t.name+' '+t.start+'-'+t.end+'（'+fmtDur(t.min)+'）'+(t.running?' · 计时中':' · 点击图标删除');
 html += '<div class="vtl-item" data-vrun="'+(t.running?'1':'0')+'" data-vi="'+list.indexOf(t)+'" style="top:'+Math.round(top)+'px;">'
-+'<div class="vtl-caps'+(t.running?' running':'')+'" style="background:'+t.color+'; height:'+Math.round(capsH)+'px;" title="'+esc(ttl)+'">'+vtlIconOf(t.name)+'</div>'
-+'<div class="vtl-info"><div class="vtl-time">'+t.start+' – '+t.end+(t.running?' · 计时中':' · '+fmtDur(t.min))+'</div>'
-+'<div class="vtl-name">'+esc(t.name)+'</div></div></div>';
++'<div class="vtl-caps'+(t.running?' running':'')+'" style="background:'+t.color+';" title="'+esc(ttl)+'">'+vtlIconOf(t.name)+'</div>'
++'<div class="vtl-info '+side+(t.running?' running':'')+'" style="background:'+t.color+'26;" title="'+esc(ttl)+'">'
++'<span class="vtl-name">'+esc(t.name)+' · '+fmtDur(t.min)+'</span>'
++'<span class="vtl-time">'+t.start+'–'+t.end+'</span></div></div>';
 });
 if(!list.length) html += '<div class="vtl-empty">今天还没有计时记录 ⏱</div>';
 box.innerHTML = html;
-box.querySelectorAll('.vtl-caps').forEach(function(c){
-c.addEventListener('click', function(){
-var item = c.parentElement;
+box.querySelectorAll('.vtl-item').forEach(function(item){
+item.querySelector('.vtl-caps').addEventListener('click', function(){
 if(item.dataset.vrun==='1') return; /* 计时中的在「结束计时」处操作 */
 var t = list[+item.dataset.vi];
 if(confirm('删除「'+t.name+'」的这条记录？')){
