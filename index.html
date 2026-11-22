@@ -1031,6 +1031,10 @@
 
   /* —— 手机端小罐目标：输入框贴底 / 许愿瓶居中偏下 / 置物架左上多排 —— */
   .card[data-sec="jar"].card-open{ display:flex; flex-direction:column; }
+  .card[data-sec="jar"] .jarleft .addrow{ padding-bottom:calc(12px + env(safe-area-inset-bottom,0px)); }
+  /* 键盘弹出兜底（小屏）：只压缩组合块上下留白，标题/瓶/网格内部间距不变 */
+  .card[data-sec="jar"].kb-compact{ padding-top:4px !important; padding-bottom:4px !important; }
+  .card[data-sec="jar"].kb-compact .sec-head{ padding-top:0 !important; margin-bottom:4px !important; }
   .card[data-sec="jar"] .sec-head{ position:relative; padding-top:6px; margin-bottom:8px; }
   .card[data-sec="jar"] .jargrid{
     position:absolute; right:0; top:38px; left:auto; bottom:auto;
@@ -6057,6 +6061,67 @@ setJarPlaceholder(); window.addEventListener('resize', setJarPlaceholder);
   if(!inp || !card) return;
   inp.addEventListener('focus', function(){ card.classList.add('kb'); });
   inp.addEventListener('blur', function(){ card.classList.remove('kb'); });
+})();
+/* 小罐目标：键盘弹出时【标题+许愿瓶+网格】作为刚体整组上移（三者施加同一位移，相对位置锁死）。
+   位移量实时读取 visualViewport 键盘高度动态计算（不写死），封顶140px；
+   顶部距状态栏预留20px；瓶子底端与输入栏之间至少16px；动画220ms ease-out。
+   输入栏（区域B）单独补偿位移，使其贴在键盘顶部；小屏触发 kb-compact 压缩上下留白。 */
+(function jarKbGroup(){
+  var card = document.querySelector('.card[data-sec="jar"]');
+  var inp = document.getElementById('jarInput');
+  if(!card || !inp) return;
+  var head = card.querySelector('.sec-head');      /* 标题（网格是其子元素，随之联动） */
+  var jr = card.querySelector('.jarright');        /* 许愿瓶容器 */
+  var row = card.querySelector('.jarleft .addrow');/* 区域B：输入框+添加按钮 */
+  var MAX_SHIFT = 140, TOP_PAD = 20, BOTTOM_GAP = 16, KB_MIN = 80;
+  var S = 0, R = 0; /* S=组合块位移，R=输入栏补偿位移 */
+  function setT(t, d){
+    if(!t) return;
+    t.style.transition = 'transform 220ms ease-out';
+    t.style.transform = d > 0 ? 'translateY(-'+d+'px)' : 'translateY(0)';
+  }
+  function reset(){
+    if(S===0 && R===0) return;
+    S = 0; R = 0;
+    setT(head, 0); setT(jr, 0); setT(row, 0);
+    card.classList.remove('kb-compact');
+  }
+  function sync(){
+    try{
+      if(document.activeElement !== inp){ reset(); return; }
+      var vv = window.visualViewport;
+      var kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+      if(kb < KB_MIN){ reset(); return; }
+      /* 基准坐标：当前 rect 换算回未位移时的位置 */
+      var headTop = head.getBoundingClientRect().top + S;
+      var jarBot = jr.getBoundingClientRect().bottom + S;
+      var rowTop = row.getBoundingClientRect().top + R;
+      var rowBot = row.getBoundingClientRect().bottom + R;
+      /* 1) 上移距离跟随键盘高度，封顶140 */
+      var s = Math.min(kb, MAX_SHIFT);
+      /* 2) 顶部：组合块顶端距视口顶至少20px */
+      s = Math.min(s, Math.max(0, headTop - TOP_PAD));
+      /* 3) 底部：瓶子底端与输入栏之间至少16px（不足则补足，仍受140封顶） */
+      var need = BOTTOM_GAP - (rowTop - jarBot);
+      if(need > 0) s = Math.min(Math.max(s, need), MAX_SHIFT);
+      s = Math.max(0, Math.round(s));
+      /* 4) 输入栏：被键盘遮住多少就上抬多少，贴在键盘顶部（动态高度，不写死） */
+      var ykb = window.innerHeight - kb; /* 键盘顶部在视口中的Y坐标 */
+      var r = Math.max(0, Math.round((rowBot) - ykb));
+      /* 5) 小屏兜底：顶部余量不足以按键盘高度位移时，压缩上下留白（内部间距不动） */
+      if(headTop - TOP_PAD < Math.min(kb, MAX_SHIFT) && s < Math.min(kb, MAX_SHIFT)) card.classList.add('kb-compact');
+      else card.classList.remove('kb-compact');
+      if(Math.abs(s - S) > 1){ S = s; setT(head, S); setT(jr, S); }
+      if(Math.abs(r - R) > 1){ R = r; setT(row, R); }
+    }catch(e){}
+  }
+  inp.addEventListener('focus', function(){ setTimeout(sync, 60); setTimeout(sync, 280); setTimeout(sync, 600); });
+  inp.addEventListener('blur', function(){ setTimeout(function(){ if(document.activeElement !== inp) reset(); }, 240); });
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', sync);
+    window.visualViewport.addEventListener('scroll', sync);
+  }
+  window.addEventListener('resize', sync);
 })();
 load();
 migrateHealthNames();
