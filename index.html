@@ -5473,16 +5473,45 @@ function blobToDataURL(blob){ return new Promise(function(res,rej){ var r=new Fi
 function dataURLToBlob(durl){ var p=durl.split(','), m=p[0].match(/:(.*?);base64/), mt=m?m[1]:'image/png', bin=atob(p[1]), len=bin.length, u8=new Uint8Array(len), i; for(i=0;i<len;i++) u8[i]=bin.charCodeAt(i); return new Blob([u8],{type:mt}); }
 function growthAllMediaIds(){ var ids=[]; (state.growth.records||[]).forEach(function(r){ (r.photos||[]).forEach(function(p){ if(p.mediaId && ids.indexOf(p.mediaId)<0) ids.push(p.mediaId); }); }); return ids; }
 function exportGrowthBackup(){
+  /* 与整工作台导出同样的保护：分批读取 + 分段拼装 + 报错提示，照片多时不再静默失败 */
+  var btn=el("growthExport"), msg=el("growthBakMsg");
+  var btnText=btn?btn.textContent:"";
+  function busy(on){ if(btn){ btn.disabled=on; btn.textContent=on?"⏳ 正在打包…":btnText; } }
+  function fail(e){
+    busy(false);
+    var m=(e&&e.message)||e||"未知错误";
+    if(msg) msg.textContent="导出失败："+m;
+    alert("导出失败："+m);
+  }
+  busy(true);
   var recs=state.growth.records||[];
   var ids=growthAllMediaIds();
-  Promise.all(ids.map(function(mid){ return dbGet(mid).then(function(rec){ return (rec&&rec.blob)? blobToDataURL(rec.blob).then(function(d){ return {mediaId:mid, dataUrl:d}; }) : null; }); })).then(function(photos){
-    photos=photos.filter(Boolean);
-    var payload={ app:"生活加油站", module:"growth", version:1, exportedAt:new Date().toISOString(), recordCount:recs.length, photoCount:photos.length, records:recs, photos:photos };
-    var blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
-    var d=new Date(), pad=function(n){return (n<10?"0":"")+n;}, fn="growth-backup-"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes())+".json";
-    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fn; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
-    var msg=el("growthBakMsg"); if(msg) msg.textContent="已导出 "+recs.length+" 条记录 / "+photos.length+" 张照片"; clearDirty();
-  });
+  if(msg) msg.textContent="正在读取照片，数量多时需要等待…";
+  var photos=[], i=0;
+  function finish(){
+    try{
+      /* 分段拼 JSON 再交给 Blob 合并，避免超长字符串 */
+      var parts=['{"app":"生活加油站","module":"growth","version":1,"exportedAt":"',new Date().toISOString(),'","recordCount":',recs.length,',"photoCount":',photos.length,',"records":',JSON.stringify(recs),',"photos":['];
+      photos.forEach(function(p,pi){ if(pi) parts.push(','); parts.push(JSON.stringify(p)); });
+      parts.push(']}');
+      var blob=new Blob(parts,{type:"application/json"});
+      var d=new Date(), pad=function(n){return (n<10?"0":"")+n;}, fn="growth-backup-"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes())+".json";
+      var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fn; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+      if(msg) msg.textContent="已导出 "+recs.length+" 条记录 / "+photos.length+" 张照片"; clearDirty();
+    }catch(e){ fail(e); return; }
+    busy(false);
+  }
+  function next(){
+    var batch=ids.slice(i, i+3); i+=3;
+    if(!batch.length){ finish(); return; }
+    Promise.all(batch.map(function(mid){ return dbGet(mid).then(function(rec){ return (rec&&rec.blob)? blobToDataURL(rec.blob).then(function(d){ photos.push({mediaId:mid, dataUrl:d}); }) : null; }); }))
+      .then(function(){
+        if(msg) msg.textContent="打包中… "+Math.min(i,ids.length)+"/"+ids.length;
+        setTimeout(next, 0);
+      })
+      .catch(fail);
+  }
+  next();
 }
 function importGrowthBackup(file){
   var rd=new FileReader();
