@@ -4,33 +4,6 @@
 <meta charset="UTF-8" data-page-node-id="5cuhwFsmvK7znv4w8J6peq">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="d7QSWLt8TObsBROR3IRqoW">
 <title>生活加油站</title>
-<!-- manifest：自动识别文件名大小写（先试小写，失败再试大写），避免大小写敏感服务器取不到清单、导致添加到桌面后卡开屏 -->
-<script>
-(function(){
-  var CANDS = ['manifest.webmanifest', 'MANIFEST.webmanifest', 'manifest.json', 'MANIFEST.json'];
-  var i = 0;
-  function attach(url){
-    var old = document.querySelector('link[rel="manifest"]');
-    if(old && old.parentNode) old.parentNode.removeChild(old);
-    var l = document.createElement('link');
-    l.rel = 'manifest'; l.href = url;
-    document.head.appendChild(l);
-  }
-  function probe(){
-    /* 全部候选都取不到时退回默认小写，保持原有行为，不影响页面本身 */
-    if(i >= CANDS.length){ attach('manifest.webmanifest'); return; }
-    var url = CANDS[i++];
-    fetch(url, {method:'GET', cache:'no-store'}).then(function(r){
-      if(!r.ok) throw new Error('bad status');
-      return r.text();
-    }).then(function(t){
-      try{ JSON.parse(t); }catch(e){ throw new Error('not json'); }
-      attach(url); /* 确认是合法 JSON 清单才挂载 */
-    }).catch(probe);
-  }
-  probe();
-})();
-</script>
 <!-- 清理历史 Service Worker / 缓存 + 申请持久化存储 -->
 <script>
 (function(){
@@ -65,6 +38,35 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="生活加油站">
 <meta name="theme-color" content="#F09858">
+<!-- 图标与 manifest 动态适配：主链接所有资源都要求带 sharecode（否则 403），
+     故页面加载时把当前参数补到 favicon / 桌面图标 / 清单地址上；
+     GitHub 等无参数链接不受影响。manifest 改为运行时生成（Blob）：
+     图标与 start_url 用绝对地址并附 sharecode，添加到主屏幕后
+     桌面图标正常显示、点开直接进入应用（不会 403「链接不完整」） -->
+<script>
+(function(){
+  var QS = location.search || '';
+  try{
+    document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(function(l){
+      if(QS && l.getAttribute('href').indexOf('?')<0) l.setAttribute('href', l.getAttribute('href') + QS);
+    });
+  }catch(e){}
+  fetch('manifest.webmanifest' + QS, {cache:'no-store'}).then(function(r){
+    if(!r.ok) throw 0; return r.json();
+  }).then(function(m){
+    var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+    (m.icons||[]).forEach(function(ic){ ic.src = base + String(ic.src).replace(/^\.\//, '') + QS; });
+    m.start_url = location.origin + '/' + QS;
+    m.scope = location.origin + '/';
+    var old = document.querySelector('link[rel="manifest"]');
+    if(old && old.parentNode) old.parentNode.removeChild(old);
+    var l = document.createElement('link');
+    l.rel = 'manifest';
+    l.href = URL.createObjectURL(new Blob([JSON.stringify(m)], {type:'application/manifest+json'}));
+    document.head.appendChild(l);
+  }).catch(function(){ /* 清单取不到时保持无清单状态，不影响页面 */ });
+})();
+</script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   :root{
