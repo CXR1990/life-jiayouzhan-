@@ -461,19 +461,11 @@
   .finbox .row .k{ color:var(--sub); font-size:13px; }
   .finbox .row.big{ font-weight:bold; }
   .finbox .sep{ border-top:1px dashed #EAD9BF; margin:7px 0; }
+  .finselwrap{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 
   /* 财务 · 批量补录历史月份 */
-  .finbatch{ background:#FFF7EA; border:1px solid #F0E0C4; border-radius:14px; padding:12px 14px; margin-bottom:14px; }
-  .finbatch .fb-ttl{ font-size:12px; font-weight:700; color:var(--accent-deep); margin-bottom:8px; }
-  .finbatch .fb-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-  .finbatch .fb-lab{ font-size:12px; color:var(--sub); flex:none; }
-  .finbatch .fb-unit{ font-size:12px; color:var(--sub); }
-  .finbatch .fb-sel{ width:auto; flex:none; font-size:13px; padding:6px 8px; border-radius:10px; background:#fff; }
-  .finbatch .fb-row{ display:flex; gap:10px; margin-bottom:8px; }
-  .finbatch .fb-row .f{ flex:1; }
-  .finbatch .fb-row .f label{ display:block; font-size:12px; color:var(--sub); margin-bottom:4px; }
-  .finbatch .fb-tip{ font-size:11px; color:#B79B6E; line-height:1.6; }
-  .finbatch .fb-tip.ok{ color:#4E8A66; }
+  .fb-sel{ width:auto; flex:none; font-size:13px; padding:6px 8px; border-radius:10px; background:#fff; }
+  .fb-unit{ font-size:12px; color:var(--sub); }
 
   /* ===== 7 睡眠 / 8 微光 ===== */
   .joys .f{ margin-bottom:66px; }
@@ -603,7 +595,6 @@
   .card[data-sec="finance"].card-open .sec-head{ margin-bottom:14px; }
   .card[data-sec="finance"].card-open .finrow{ margin-bottom:0; flex:0 0 auto; }
   .card[data-sec="finance"].card-open .finbox{ margin-bottom:0; flex:0 0 auto; }
-  .card[data-sec="finance"].card-open .finbatch{ flex:0 0 auto; margin-top:14px; margin-bottom:0; overflow:visible; }
   .card[data-sec="finance"].card-open .fincharts{ flex:1 1 auto; min-height:0; margin-top:16px; }
   .card[data-sec="finance"].card-open .schart{ flex:1 1 0; min-height:150px; }
   .card[data-sec="finance"].card-open .schart .schart-body{ display:flex; }
@@ -898,6 +889,7 @@
   .period-toggle{ display:inline-flex; gap:4px; flex:none; }
   .period-toggle button{ font-size:11px; padding:2px 9px; border-radius:100px; border:1px solid #E3D5C2; background:#fff; color:var(--sub); cursor:pointer; }
   .period-toggle button.on{ background:var(--lav-soft); color:#7A6BB8; border-color:#D9CDEE; font-weight:bold; }
+  .fin-toggles{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
   /* ===== 上传照片按钮 / 预览 ===== */
   .upbtn{ font-size:12px; padding:3px 10px; border-radius:100px; border:1px solid #E3D5C2; background:#fff; color:var(--accent-deep); cursor:pointer; flex:none; }
   .upbtn:hover{ background:var(--accent-soft); }
@@ -1644,8 +1636,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <h2 data-page-node-id="dSaK0x4EGssL4rAXUIvkVC">财务记录</h2>
     </div>
     <div class="finrow" data-page-node-id="FvpNdiHHmfE8FJmg9VLlNo">
-      <div class="f" data-page-node-id="PrfGlNsLXDSSEAl7Ilc1Ar"><label data-page-node-id="hK3kvTWwI7y5T4oy5qWcMI">今日总支出（元）</label><input type="number" id="finExp" min="0" step="0.01" placeholder="只填数字" data-page-node-id="erW6NeSMsZAW9GIPSauZH3"></div>
-      <div class="f" data-page-node-id="2fkqukBUywmAX2Ff3q16az"><label data-page-node-id="edhLLB2DOIjlNyw8KqHXBB">今日总收入（元）</label><input type="number" id="finInc" min="0" step="0.01" placeholder="只填数字" data-page-node-id="q6iaCgn5NgxYVgDh2oHTWP"></div>
+      <div class="f" data-page-node-id="PrfGlNsLXDSSEAl7Ilc1Ar"><label data-page-node-id="hK3kvTWwI7y5T4oy5qWcMI">选择年月</label><div class="finselwrap"><select id="finSelYear" class="fb-sel"></select><span class="fb-unit">年</span><select id="finSelMonth" class="fb-sel"></select><span class="fb-unit">月</span></div></div>
+    </div>
+    <div class="finrow">
+      <div class="f" data-page-node-id="2fkqukBUywmAX2Ff3q16az"><label data-page-node-id="edhLLB2DOIjlNyw8KqHXBB">本月收入（元）</label><input type="number" id="finInc" min="0" step="0.01" placeholder="只填数字" data-page-node-id="q6iaCgn5NgxYVgDh2oHTWP"></div>
+      <div class="f" data-page-node-id="PrfGlNsLXDSSEAl7Ilc1Ab"><label data-page-node-id="hK3kvTWwI7y5T4oy5qWcMB">本月支出（元）</label><input type="number" id="finExp" min="0" step="0.01" placeholder="只填数字" data-page-node-id="erW6NeSMsZAW9GIPSauZH3"></div>
     </div>
     <div class="finbox" data-page-node-id="KsawVkfumCIXZ17to0iNHI">
       <div class="ttl" id="finBoxTtl" data-page-node-id="A52DCuPjc9HDXA1I0HMpyC">📊 本月统计（自动汇总）</div>
@@ -1654,26 +1649,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="row big" data-page-node-id="oKcExln6tefLB7bYcceD9z"><span class="k" data-page-node-id="8B2f5BBzXhAvE8jvLuK7HE">本月结余</span><span id="mBal" data-page-node-id="k8bQstUEeddZRrKMP2mmka">¥0</span></div>
     </div>
     <div class="fincharts" id="finCharts"></div>
-    <!-- 批量补录历史月份（置于财务卡片最底部） -->
-    <div class="finbatch">
-      <div class="fb-ttl">📥 批量补录历史月份</div>
-      <div class="fb-line">
-        <span class="fb-lab">选择年月</span>
-        <select id="fbYear" class="fb-sel"></select>
-        <span class="fb-unit">年</span>
-        <select id="fbMonth" class="fb-sel"></select>
-        <span class="fb-unit">月</span>
-      </div>
-      <div class="fb-row">
-        <div class="f"><label>每日收入（元）</label><input type="number" id="fbInc" min="0" step="0.01" placeholder="留空表示不改"></div>
-        <div class="f"><label>每日支出（元）</label><input type="number" id="fbExp" min="0" step="0.01" placeholder="留空表示不改"></div>
-      </div>
-      <div class="fb-line">
-        <button class="btn small" id="fbFill" type="button">批量填入整月</button>
-        <button class="btn small danger" id="fbClear" type="button">清空该月</button>
-      </div>
-      <div class="fb-tip" id="fbTip">选好年月 → 填每日收入 / 支出 → 点「批量填入整月」，下方统计与趋势图会自动更新。</div>
-    </div>
   </div>
 
   <!-- 7 睡眠记录 -->
@@ -2122,7 +2097,7 @@ function save(){
 function load(){
   try{
     var raw = localStorage.getItem(STORE_KEY);
-    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; state.wishes=state.wishes||[];
+    if(raw){ var s = JSON.parse(raw); if(s && typeof s==='object'){ state = s; state.days=state.days||{}; state.notes=state.notes||[]; state.pocket=state.pocket||[]; state.videos=state.videos||[]; state.periodDays=state.periodDays||[]; state.growth=state.growth||{records:[]}; state.growth.records=state.growth.records||[]; if(typeof state.coins!=='number') state.coins=0; state.memos=state.memos||[]; state.memoFolders=state.memoFolders||[]; state.wishes=state.wishes||[]; state.finMonthly=state.finMonthly||{};
       /* 并行计时：旧版单个 activeTrack 迁移为数组 activeTracks */
       if(state.activeTrack && !state.activeTracks) state.activeTracks=[state.activeTrack];
       if(!Array.isArray(state.activeTracks)) state.activeTracks=[];
@@ -3152,13 +3127,29 @@ function saveTask(){
   window.addEventListener('scroll', function(){ closeCellMenu(); }, true);
 })();
 
-/* ================= 6 财务 ================= */
+/* ================= 6 财务（按月录入版） ================= */
+/* 月度数据源：优先取月度录入条目 state.finMonthly['YYYY-MM']；
+   该月没有条目时回退为旧版按日记录求和，历史数据不丢失。
+   一旦在输入框里编辑过该月，就会固化为月度条目（以条目为准）。 */
+function finMonthRaw(ym){
+  var e = state.finMonthly && state.finMonthly[ym];
+  if(e) return { inc:(e.income!==''&&e.income!=null)?String(e.income):'', exp:(e.expense!==''&&e.expense!=null)?String(e.expense):'' };
+  var m = monthSum(ym);
+  var r = function(n){ return n ? String(Math.round(n*100)/100) : ''; };
+  return { inc:r(m.inc), exp:r(m.exp) };
+}
 function bindFin(id, field){
   el(id).addEventListener('input', function(){
-    getDay(curDate).finance[field] = this.value; save(); renderFinStats(); renderFinCharts();
+    var ym = finYM();
+    var raw = finMonthRaw(ym);
+    state.finMonthly = state.finMonthly || {};
+    state.finMonthly[ym] = {
+      income:  (field==='income')  ? this.value : raw.inc,
+      expense: (field==='expense') ? this.value : raw.exp
+    };
+    save(); renderFinStats(); renderFinCharts();
   });
 }
-bindFin('finExp','expense'); bindFin('finInc','income');
 function monthSum(ym){
   var inc=0, exp=0;
   Object.keys(state.days).forEach(function(k){
@@ -3170,32 +3161,35 @@ function monthSum(ym){
   return {inc:inc, exp:exp, bal:inc-exp};
 }
 function yuan(n){ var v = Math.round(n*100)/100; return '¥'+(v%1===0 ? v : v.toFixed(2)); }
-/* 财务板块当前查看的年月：默认跟随顶部日期，补录其它月份时由 finMonth 接管 */
+/* 财务板块当前查看的年月：默认跟随顶部日期，切换选择器后由 finMonth 接管 */
 var finMonth = null;
 function finYM(){ return finMonth || curDate.slice(0,7); }
 function renderFinStats(){
   var ym = finYM();
   finBuildSelects();
-  var m = monthSum(ym);
+  /* 输入框回显该月数值（正在输入的那个框不回显，避免打断输入） */
+  var raw = finMonthRaw(ym);
+  if(document.activeElement !== el('finInc')) el('finInc').value = raw.inc;
+  if(document.activeElement !== el('finExp')) el('finExp').value = raw.exp;
+  var i = parseFloat(raw.inc)||0, e2 = parseFloat(raw.exp)||0;
   var ttl = el('finBoxTtl');
   if(ttl) ttl.textContent = '📊 '+ym.replace('-',' 年 ')+' 月 · 自动汇总';
-  el('mInc').textContent = yuan(m.inc);
-  el('mExp').textContent = yuan(m.exp);
-  el('mBal').textContent = yuan(m.bal);
-  el('mBal').style.color = m.bal>=0 ? '#4E8A66' : 'var(--red)';
+  el('mInc').textContent = yuan(i);
+  el('mExp').textContent = yuan(e2);
+  el('mBal').textContent = yuan(i-e2);
+  el('mBal').style.color = (i-e2)>=0 ? '#4E8A66' : 'var(--red)';
 }
-
-/* ---------- 批量补录历史月份 ---------- */
-function finMonthDays(ym){
-  var y = +ym.slice(0,4), m = +ym.slice(5,7);
-  return {y:y, m:m, days:new Date(y, m, 0).getDate()};
-}
+/* ---------- 年月选择器 ---------- */
 function finBuildSelects(){
-  var ys = el('fbYear'), ms = el('fbMonth');
+  var ys = el('finSelYear'), ms = el('finSelMonth');
   if(!ys || !ms) return;
   var curY = new Date().getFullYear();
   var minY = curY - 5, maxY = curY + 1;
   Object.keys(state.days||{}).forEach(function(k){
+    var y = parseInt(k.slice(0,4), 10);
+    if(!isNaN(y)){ if(y < minY) minY = y; if(y > maxY) maxY = y; }
+  });
+  Object.keys(state.finMonthly||{}).forEach(function(k){
     var y = parseInt(k.slice(0,4), 10);
     if(!isNaN(y)){ if(y < minY) minY = y; if(y > maxY) maxY = y; }
   });
@@ -3215,81 +3209,18 @@ function finBuildSelects(){
   }
   ys.value = ym.slice(0,4); ms.value = ym.slice(5,7);
 }
-/* 该月已有记录的天数（收入或支出有值都算） */
-function finCountDays(ym){
-  var n = 0;
-  finMonthKeys(ym).forEach(function(k){
-    var f = state.days[k] && state.days[k].finance;
-    if(!f) return;
-    if((f.income!=='' && f.income!=null) || (f.expense!=='' && f.expense!=null)) n++;
-  });
-  return n;
-}
 function finOnMonthChanged(){
-  var ys = el('fbYear'), ms = el('fbMonth');
+  var ys = el('finSelYear'), ms = el('finSelMonth');
   if(!ys || !ms || !ys.value || !ms.value) return;
   finMonth = ys.value + '-' + ms.value;
   renderFinStats(); renderFinCharts();
-  var tip = el('fbTip');
-  if(tip){
-    tip.classList.remove('ok');
-    var m = monthSum(finMonth), n = finCountDays(finMonth);
-    tip.textContent = finMonth + '：已有 ' + n + ' 天记录（收入 ' + yuan(m.inc) + ' / 支出 ' + yuan(m.exp) + '）。填入会覆盖这些天的数值。';
-  }
 }
-/* 返回该月 1~N 号（当前月只到今天，不写未来）的日期键数组 */
-function finMonthKeys(ym){
-  var d = finMonthDays(ym), out = [], today = todayStr();
-  for(var i=1;i<=d.days;i++){
-    var k = d.y+'-'+pad(d.m)+'-'+pad(i);
-    if(ym === today.slice(0,7) && k > today) break;
-    out.push(k);
-  }
-  return out;
-}
-function finBatchApply(clearMode){
-  var ym = finYM();
-  var keys = finMonthKeys(ym);
-  if(!keys.length){ return; }
-  var incRaw = el('fbInc').value.trim(), expRaw = el('fbExp').value.trim();
-  var inc = incRaw==='' ? null : parseFloat(incRaw);
-  var exp = expRaw==='' ? null : parseFloat(expRaw);
-  if(clearMode){
-    if(!confirm('确定清空 '+ym+' 这 '+keys.length+' 天的收入与支出？该月原有记录会被抹掉。')) return;
-    keys.forEach(function(k){ var d = getDay(k); d.finance = {expense:'', income:''}; });
-  } else {
-    if(inc===null && exp===null){ alert('请至少填写「每日收入」或「每日支出」其中一项。'); return; }
-    if((inc!==null && isNaN(inc)) || (exp!==null && isNaN(exp))){ alert('金额请只填数字。'); return; }
-    var desc = [];
-    if(inc!==null) desc.push('每日收入 ¥'+inc);
-    if(exp!==null) desc.push('每日支出 ¥'+exp);
-    if(!confirm('将把 '+ym+' 的 '+keys[0].slice(8)+'~'+keys[keys.length-1].slice(8)+' 号（共 '+keys.length+' 天）\n'
-      + desc.join('、') + '。\n该月已有记录会被覆盖，确定？')) return;
-    keys.forEach(function(k){
-      var d = getDay(k);
-      d.finance = d.finance || {expense:'', income:''};
-      if(inc!==null) d.finance.income = String(inc);
-      if(exp!==null) d.finance.expense = String(exp);
-    });
-  }
-  save();
-  finMonth = ym;
-  renderFinStats(); renderFinCharts(); renderStats();
-  var tip = el('fbTip');
-  if(tip){
-    tip.textContent = clearMode ? ('已清空 '+ym+' 共 '+keys.length+' 天，统计与趋势图已刷新。')
-                                : ('已写入 '+ym+' 共 '+keys.length+' 天，统计与趋势图已刷新。');
-    tip.classList.add('ok');
-  }
-}
-(function finBatchInit(){
-  var ys = el('fbYear'), ms = el('fbMonth');
+(function finSelInit(){
+  var ys = el('finSelYear'), ms = el('finSelMonth');
   if(!ys || !ms) return;
   finBuildSelects();
   ys.addEventListener('change', finOnMonthChanged);
   ms.addEventListener('change', finOnMonthChanged);
-  el('fbFill').addEventListener('click', function(){ finBatchApply(false); });
-  el('fbClear').addEventListener('click', function(){ finBatchApply(true); });
 })();
 
 /* ================= 7 睡眠 / 8 微光 ================= */
@@ -3688,45 +3619,53 @@ el('sleepCharts').addEventListener('click', function(e){
 });
 
 /* ================= 财务汇总趋势（内嵌在财务板块） ================= */
+/* 时间维度：月=横轴为月份（所选年份 1~12 月，每月一条数据）；
+   年=横轴为年份（聚合当年全部月份求和）。
+   数据项：inc=收入 / exp=支出 / bal=结余（结余=当月收入−当月支出） */
 var finPeriod = 'm';
-/* 结余 = 收入 − 支出；金额可正可负、可大可小，曲线按数据范围自适应 */
-function finDayBal(k){
-  var f = state.days[k] && state.days[k].finance;
-  if(!f) return null;
-  var inc = parseFloat(f.income), exp = parseFloat(f.expense);
-  if(isNaN(inc) && isNaN(exp)) return null;
-  return (isNaN(inc)?0:inc) - (isNaN(exp)?0:exp);
-}
-function finAgg(period){
-  var rows = [];
-  Object.keys(state.days).forEach(function(k){
-    var v = finDayBal(k);
-    if(v!==null) rows.push({date:k, v:v});
-  });
+var finMetric = 'inc';
+var FIN_METRICS = {
+  inc:{ name:'收入', color:'#4E8A66', soft:'#E2F0E7' },
+  exp:{ name:'支出', color:'#E07840', soft:'#FCEBDA' },
+  bal:{ name:'结余', color:'#7A6BB8', soft:'#E9E3F5' }
+};
+/* 月度汇总表：key='YYYY-MM' → {inc,exp,bal}；覆盖月度录入与旧按日记录的所有月份 */
+function finMonthMap(){
+  var yms = {};
+  Object.keys(state.days||{}).forEach(function(k){ if(k && k.length>=7) yms[k.slice(0,7)] = 1; });
+  Object.keys(state.finMonthly||{}).forEach(function(k){ yms[k] = 1; });
   var map = {};
-  rows.forEach(function(r){ map[r.date]=r.v; });
+  Object.keys(yms).sort().forEach(function(ym){
+    var r = finMonthRaw(ym);
+    var i = parseFloat(r.inc), e = parseFloat(r.exp);
+    i = isNaN(i)?0:i; e = isNaN(e)?0:e;
+    map[ym] = { inc:i, exp:e, bal:Math.round((i-e)*100)/100 };
+  });
+  return map;
+}
+function finAgg(period, metric){
+  var map = finMonthMap();
   var out=[];
-  if(period==='d'){
-    var t = map[curDate];
-    return [{v:(t===undefined?null:t), label:curDate.slice(5)}];
-  }
   if(period==='m'){
-    /* 月视图：固定「财务当前年月」1 号~最后一天全部槽位，缺记录的天留空 */
-    var fy = finYM();
-    var y=+fy.slice(0,4), m=+fy.slice(5,7);
-    var days=new Date(y,m,0).getDate();
-    for(var i=1;i<=days;i++){
-      var k=y+'-'+pad(m)+'-'+pad(i);
-      out.push({v:(map[k]!==undefined?map[k]:null), label:String(i)});
+    /* 月视图：所选年份 1~12 月各一个数据点，缺数据的月份留空 */
+    var y = finYM().slice(0,4);
+    for(var i=1;i<=12;i++){
+      var d = map[y+'-'+pad(i)];
+      out.push({ v:(d ? d[metric] : null), label:String(i)+'月' });
     }
     return out;
   }
-  /* 年视图：每年取当年全部结余总额，横坐标 26年、27年… */
+  /* 年视图：每年聚合当年全部月份求和，横坐标 26年、27年… */
   var g={};
-  rows.forEach(function(r){ var y=r.date.slice(0,4); (g[y]=g[y]||[]).push(r.v); });
-  return Object.keys(g).sort().map(function(y){
-    var sum = g[y].reduce(function(a,b){ return a+b; },0);
-    return {v:Math.round(sum*100)/100, label:String((+y)%100)+'年'};
+  Object.keys(map).forEach(function(ym){
+    var yy = ym.slice(0,4), d = map[ym];
+    var a = g[yy] = g[yy] || {inc:0, exp:0, bal:0};
+    a.inc += d.inc; a.exp += d.exp; a.bal += d.bal;
+  });
+  return Object.keys(g).sort().map(function(yy){
+    var a = g[yy];
+    ['inc','exp','bal'].forEach(function(k){ a[k] = Math.round(a[k]*100)/100; });
+    return { v:a[metric], label:String((+yy)%100)+'年' };
   });
 }
 /* 金额刻度智能生成：数据可能很大或很小，按数据范围挑 4 个整齐刻度 */
@@ -3751,20 +3690,30 @@ function fmtMoney(v){
 }
 function renderFinCharts(){
   var box = el('finCharts'); if(!box) return;
-  var pts = finAgg(finPeriod);
+  var meta = FIN_METRICS[finMetric] || FIN_METRICS.inc;
+  var pts = finAgg(finPeriod, finMetric);
   var ticks = finTicks(pts);
-  var pg = [['d','日'],['m','月'],['y','年']].map(function(p){
+  var has = pts.some(function(p){ return p.v!==null && p.v!==undefined; });
+  var pg = [['m','月'],['y','年']].map(function(p){
     return '<button data-p="'+p[0]+'"'+(finPeriod===p[0]?' class="on"':'')+'>'+p[1]+'</button>';
   }).join('');
-  var body = pts.length ? lineChart(pts, '#E07840', '#FCEBDA', null, null, ticks) : '<div class="empty">暂无财务记录，先在上方填写吧</div>';
-  box.innerHTML = '<div class="schart"><div class="schart-head"><span class="ct">💰 收支结余趋势（元）</span>'
-    + '<div class="period-toggle" id="finPeriodToggle">'+pg+'</div></div>'
+  var mg = [['inc','收入'],['exp','支出'],['bal','结余']].map(function(p){
+    return '<button data-p="'+p[0]+'"'+(finMetric===p[0]?' class="on"':'')+'>'+p[1]+'</button>';
+  }).join('');
+  var body = has ? lineChart(pts, meta.color, meta.soft, null, null, ticks) : '<div class="empty">暂无财务记录，先在上方填写吧</div>';
+  box.innerHTML = '<div class="schart"><div class="schart-head"><span class="ct">💰 '+meta.name+'趋势（元）</span>'
+    + '<div class="fin-toggles">'
+    + '<div class="period-toggle" data-group="period">'+pg+'</div>'
+    + '<div class="period-toggle" data-group="metric">'+mg+'</div>'
+    + '</div></div>'
     + '<div class="schart-body">'+body+'</div></div>';
 }
 el('finCharts').addEventListener('click', function(e){
   var b = e.target.closest && e.target.closest('.period-toggle button');
   if(!b) return;
-  finPeriod = b.dataset.p;
+  var g = b.closest('.period-toggle').dataset.group;
+  if(g === 'period') finPeriod = b.dataset.p;
+  else finMetric = b.dataset.p;
   renderFinCharts();
 });
 
@@ -4936,8 +4885,6 @@ function renderAll(){
 
   el('readDone').checked = !!day.english.readDone;
   el('readMin').value = day.english.readMin||'';
-  el('finExp').value = day.finance.expense||'';
-  el('finInc').value = day.finance.income||'';
   el('sleepH').value = '';
   el('sleepS').value = '';
   ['joy1','joy2','joy3'].forEach(function(id,i){
