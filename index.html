@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-page-node-id="hRr79ZAV0YJXzPf9DcHkIO">
 <head data-page-node-id="puXWYZKDvpf2wBkDKDuHqU">
 <meta charset="UTF-8" data-page-node-id="5cuhwFsmvK7znv4w8J6peq">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="d7QSWLt8TObsBROR3IRqoW">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" data-page-node-id="d7QSWLt8TObsBROR3IRqoW">
 <title>生活加油站</title>
 <!-- 清理历史 Service Worker / 缓存 + 申请持久化存储 -->
 <script>
@@ -6075,28 +6075,48 @@ setJarPlaceholder(); window.addEventListener('resize', setJarPlaceholder);
   var row = card.querySelector('.jarleft .addrow');/* 区域B：输入框+添加按钮 */
   var MAX_SHIFT = 140, TOP_PAD = 20, BOTTOM_GAP = 16, KB_MIN = 80;
   var S = 0, R = 0; /* S=组合块位移，R=输入栏补偿位移 */
+  var baseH = window.innerHeight; /* 焦点前的视口基准高度（键盘未弹出时） */
+  var pollT = null, pollN = 0;
+  var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints||0) > 0;
   function setT(t, d){
     if(!t) return;
     t.style.transition = 'transform 220ms ease-out';
     t.style.transform = d > 0 ? 'translateY(-'+d+'px)' : 'translateY(0)';
   }
   function reset(){
+    if(pollT){ clearInterval(pollT); pollT = null; }
+    baseH = window.innerHeight; /* 键盘收起时刷新基准 */
     if(S===0 && R===0) return;
     S = 0; R = 0;
     setT(head, 0); setT(jr, 0); setT(row, 0);
     card.classList.remove('kb-compact');
   }
+  /* 键盘高度多信号检测：
+     信号A=布局视口收缩（华为等浏览器 resize-content 模式：innerHeight 变小）；
+     信号B=视觉视口收缩（标准 Chromium resizes-visual 模式：vv.height 变小）。
+     取两者最大值。都为0且是触屏设备时，用屏幕高度比例兜底估算。 */
+  function getKb(){
+    var kbL = Math.max(0, baseH - window.innerHeight);
+    var kbV = 0;
+    try{ var vv = window.visualViewport; if(vv && vv.height > 0) kbV = Math.max(0, baseH - vv.height); }catch(e){}
+    var kb = Math.max(kbL, kbV);
+    var layoutShrunk = kbL > 10;
+    if(kb < KB_MIN){
+      if(isTouch && pollN >= 5){ kb = Math.round(window.innerHeight * 0.42); layoutShrunk = false; }
+      else return { kb: 0, layoutShrunk: false };
+    }
+    return { kb: kb, layoutShrunk: layoutShrunk };
+  }
   function sync(){
     try{
       if(document.activeElement !== inp){ reset(); return; }
-      var vv = window.visualViewport;
-      var kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
-      if(kb < KB_MIN){ reset(); return; }
+      var m = getKb(), kb = m.kb;
+      if(kb < KB_MIN){ return; }
       /* 基准坐标：当前 rect 换算回未位移时的位置 */
       var headTop = head.getBoundingClientRect().top + S;
       var jarBot = jr.getBoundingClientRect().bottom + S;
-      var rowTop = row.getBoundingClientRect().top + R;
-      var rowBot = row.getBoundingClientRect().bottom + R;
+      var rowTop = row ? row.getBoundingClientRect().top + R : window.innerHeight;
+      var rowBot = row ? row.getBoundingClientRect().bottom + R : window.innerHeight;
       /* 1) 上移距离跟随键盘高度，封顶140 */
       var s = Math.min(kb, MAX_SHIFT);
       /* 2) 顶部：组合块顶端距视口顶至少20px */
@@ -6105,17 +6125,28 @@ setJarPlaceholder(); window.addEventListener('resize', setJarPlaceholder);
       var need = BOTTOM_GAP - (rowTop - jarBot);
       if(need > 0) s = Math.min(Math.max(s, need), MAX_SHIFT);
       s = Math.max(0, Math.round(s));
-      /* 4) 输入栏：被键盘遮住多少就上抬多少，贴在键盘顶部（动态高度，不写死） */
-      var ykb = window.innerHeight - kb; /* 键盘顶部在视口中的Y坐标 */
-      var r = Math.max(0, Math.round((rowBot) - ykb));
+      /* 4) 输入栏：被键盘遮住多少就上抬多少，贴在键盘顶部。
+         布局被压缩时键盘顶=视口底；视觉视口收缩时键盘顶=视口底-kb */
+      var ykb = m.layoutShrunk ? window.innerHeight : (window.innerHeight - kb);
+      var r = row ? Math.max(0, Math.round(rowBot - ykb)) : 0;
       /* 5) 小屏兜底：顶部余量不足以按键盘高度位移时，压缩上下留白（内部间距不动） */
       if(headTop - TOP_PAD < Math.min(kb, MAX_SHIFT) && s < Math.min(kb, MAX_SHIFT)) card.classList.add('kb-compact');
       else card.classList.remove('kb-compact');
       if(Math.abs(s - S) > 1){ S = s; setT(head, S); setT(jr, S); }
-      if(Math.abs(r - R) > 1){ R = r; setT(row, R); }
+      if(row && Math.abs(r - R) > 1){ R = r; setT(row, R); }
     }catch(e){}
   }
-  inp.addEventListener('focus', function(){ setTimeout(sync, 60); setTimeout(sync, 280); setTimeout(sync, 600); });
+  /* 轮询：键盘弹出/收起是系统动画，事件可能晚到或不到，焦点期间持续采样 2 秒 */
+  function startPoll(){
+    if(pollT) return;
+    pollN = 0;
+    pollT = setInterval(function(){
+      pollN++;
+      sync();
+      if(pollN > 22 || document.activeElement !== inp){ clearInterval(pollT); pollT = null; }
+    }, 90);
+  }
+  inp.addEventListener('focus', function(){ startPoll(); sync(); });
   inp.addEventListener('blur', function(){ setTimeout(function(){ if(document.activeElement !== inp) reset(); }, 240); });
   if(window.visualViewport){
     window.visualViewport.addEventListener('resize', sync);
